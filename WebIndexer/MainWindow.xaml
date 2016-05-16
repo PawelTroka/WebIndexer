@@ -1,0 +1,60 @@
+﻿<Window x:Class="WebIndexer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WebIndexer"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="559.375" Width="766.667">
+    <Grid>
+        <TextBox x:Name="domainTextBox" HorizontalAlignment="Left" Height="35" Margin="246,38,0,0" TextWrapping="Wrap"
+                 Text="https://pomoc.pg.gda.pl" VerticalAlignment="Top" Width="347" FontSize="20" />
+        <Button x:Name="startButton" Click="StartButton_OnClick" Content="Start" HorizontalAlignment="Left"
+                Margin="490,78,0,0" VerticalAlignment="Top" Width="103" Height="50" FontSize="20" />
+        <Label x:Name="label" Content="Domain:" HorizontalAlignment="Left" Margin="158,34,0,0" VerticalAlignment="Top"
+               Height="35" Width="83" FontSize="20" />
+        <Label x:Name="label1" HorizontalAlignment="Left" Margin="0,155,0,0" VerticalAlignment="Top">
+            <TabControl x:Name="tabControl" Height="366" Width="749">
+                <TabItem Header="Processed urls">
+                    <Grid Background="#FFE5E5E5">
+                        <RichTextBox x:Name="processedOutputTextBlock" Margin="10" IsReadOnly="True" />
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Unprocessed urls">
+                    <Grid Background="#FFE5E5E5">
+                        <RichTextBox x:Name="unprocessedOutputTextBlock" Margin="10" IsReadOnly="True" />
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Documents">
+                    <Grid Background="#FFE5E5E5">
+                        <TreeView x:Name="treeView" Margin="10">
+                            <TreeView.ItemTemplate>
+                                <DataTemplate>
+                                    <TreeViewItem Header="{Binding AbsoluteUrl}">
+
+                                        <TreeViewItem Header="DownloadTime:" />
+                                        <TreeViewItem Header="{Binding DownloadTime}" />
+
+                                        <TreeViewItem Header="Indegree:" />
+                                        <TreeViewItem Header="{Binding Indegree}" />
+                                        <TreeViewItem Header="Outdegree:" />
+                                        <TreeViewItem Header="{Binding Outdegree}" />
+                                        <TreeViewItem Header="InLinks">
+                                            <TreeView ItemsSource="{Binding InLinks}" />
+                                        </TreeViewItem>
+                                        <TreeViewItem Header="OutLinks">
+                                            <TreeView ItemsSource="{Binding OutLinks}" />
+                                        </TreeViewItem>
+                                    </TreeViewItem>
+                                </DataTemplate>
+                            </TreeView.ItemTemplate>
+                        </TreeView>
+
+                    </Grid>
+                </TabItem>
+            </TabControl>
+        </Label>
+        <Label x:Name="label2" Content="Output:" HorizontalAlignment="Left" Margin="10,129,0,0" VerticalAlignment="Top" />
+
+    </Grid>
+</Window>
