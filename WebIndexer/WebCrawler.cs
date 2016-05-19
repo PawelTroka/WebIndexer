@@ -14,10 +14,19 @@ using System.Threading.Tasks;
 
 namespace WebIndexer
 {
+    /* TODO:
+     * 1. https://en.wikipedia.org/wiki/Robots_exclusion_standard
+     * 2. download of documents and saving on dics
+     * 3.
+c/ analiza grafu połączeń między dokumentami: liczba wierz. i łuków, rozkłady stopni (in, out), najkrótsze ścieżki (wszystkie pary), średnia odległość, średnica grafu, podział na klastry (współczynniki klastryzacji), odporność na ataki i awarie (zmiany grafu przy usuwaniu wierz. losowych oraz maks. stop.) (10p)
+d/ wybrane 2 parametry (z obszernej literatury na ten temat), inne niz powyżej (5p)
+e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjnego algorytmu PageRank (z tłumieniem i bez tłumienia), zbadaj zbieżność metody dla różnych wartości wsp. tłumienia (5p)
+     */
+
     internal class WebCrawler
     {
 
-        private readonly HttpClient client = new HttpClient();
+        private readonly HttpClient client = new HttpClient() {Timeout = TimeSpan.FromHours(1)};
         private readonly ConcurrentDictionary<Uri, WebDocument> _documents =
             new ConcurrentDictionary<Uri, WebDocument>();
 
@@ -186,6 +195,78 @@ namespace WebIndexer
             }
 
             return str;
+        }
+
+
+        private async Task<string> GetDocumentOld(Uri urlAddress)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest) WebRequest.Create(urlAddress);
+                HttpWebResponse response =  (HttpWebResponse) await request.GetResponseAsync();
+
+                if (response.StatusCode == HttpStatusCode.OK && response.ContentType.ToLower().Contains("html"))
+                {
+                    Stream receiveStream = response.GetResponseStream();
+                    StreamReader readStream = null;
+
+                    if (string.IsNullOrEmpty(response.CharacterSet) || string.IsNullOrWhiteSpace(response.CharacterSet))
+                    {
+                        readStream = new StreamReader(receiveStream);
+                    }
+                    else
+                    {
+                        readStream = new StreamReader(receiveStream, Encoding.GetEncoding(response.CharacterSet));
+                    }
+
+                    var str = await readStream.ReadToEndAsync();
+
+                    response.Close();
+                    readStream.Close();
+                    return str;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"For url: {urlAddress} exception: {ex} occured!");
+            }
+            return null;
+        }
+
+
+        private string GetDocumentOld2(Uri urlAddress)
+        {
+            try
+            {
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(urlAddress);
+                HttpWebResponse response = (HttpWebResponse) request.GetResponse();
+
+                if (response.StatusCode == HttpStatusCode.OK && response.ContentType.ToLower().Contains("html"))
+                {
+                    Stream receiveStream = response.GetResponseStream();
+                    StreamReader readStream = null;
+
+                    if (string.IsNullOrEmpty(response.CharacterSet) || string.IsNullOrWhiteSpace(response.CharacterSet))
+                    {
+                        readStream = new StreamReader(receiveStream);
+                    }
+                    else
+                    {
+                        readStream = new StreamReader(receiveStream, Encoding.GetEncoding(response.CharacterSet));
+                    }
+
+                    var str =  readStream.ReadToEnd();
+
+                    response.Close();
+                    readStream.Close();
+                    return str;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"For url: {urlAddress} exception: {ex} occured!");
+            }
+            return null;
         }
     }
 }
