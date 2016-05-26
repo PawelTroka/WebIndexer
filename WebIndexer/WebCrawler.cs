@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using HtmlAgilityPack;
 
 namespace WebIndexer
 {
@@ -59,9 +60,14 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
         public async Task Analyze(string domain)
         {
             _domain = new Uri(domain);
+
+            var illegalChars = Path.GetInvalidPathChars();
+            var windowsIllegalChars = @"\/:".ToCharArray();
+            _domainDirectory = new string(_domain.ToString().Where(c => !illegalChars.Contains(c) && !windowsIllegalChars.Contains(c)).ToArray());
             // _domain = GetValidUrlOrNull(domain);
             //if (_domain == null)
             //  return Task.Delay(1);
+            _documents.Clear();
             _documents[_domain] = new WebDocument() {AbsoluteUrl = _domain};
                 var stw = Stopwatch.StartNew();
                 await AnalyzeUrl(_domain,null);
@@ -72,20 +78,18 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                     _documents.TryRemove(webDocument.Key,out toRemove);
             }
                 stw.Stop();
-                _progressHandler.Report(new UrlReport($"Time: {stw.Elapsed.TotalMilliseconds}ms"));
-
+                _progressHandler.Report(new UrlReport($"Pages count: {_documents.Count}{Environment.NewLine}Time: {stw.Elapsed.TotalMilliseconds}ms{Environment.NewLine}Speed: {_documents.Count/stw.Elapsed.TotalSeconds} pages/second"));
         }
 
 
         private async Task AnalyzeUrl(Uri url, Uri sourceUrl)
         {
-            
             _documents[url].Analyzed = true;
-            var stopwatch = new Stopwatch();
+            var stopwatch = Stopwatch.StartNew();//new Stopwatch();
 
             //1. download document and measure time
             stopwatch.Start();
-            var str = await GetDocument(url);
+            var str = await GetDocument(url);//GetDocument3(url);//await GetDocument(url);
             stopwatch.Stop();
 
             if (str == null)
@@ -103,6 +107,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             }
             //2. save document
             //TODO: save
+            SaveDocument(url,str);
 
             var tasks = new ConcurrentBag<Task>();
 
@@ -137,11 +142,38 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             _progressHandler.Report(new UrlReport(url, UrlStatus.Processed)); //_progressHandler.Report($"{url} - OK!");
         }
 
+        private string _domainDirectory;
+
+
+
+        private void SaveDocument(Uri uri,string content)
+        {
+            var filename = _domain.MakeRelativeUri(uri).ToString();
+
+            var index = filename.LastIndexOfAny(@"\/".ToCharArray());
+
+            var lastPart = (index >= 0) ? filename.Substring(index) : filename;
+
+            if (!lastPart.Contains('.'))
+            {
+                if (filename.Length > 0 && filename.Last() != '/')
+                    filename += '/';
+                filename += "index.html";
+            }
+
+            filename = Path.Combine(_domainDirectory, filename);
+            System.IO.FileInfo file = new System.IO.FileInfo(filename);
+            file.Directory.Create(); // If the directory already exists, this method does nothing.
+            System.IO.File.WriteAllText(file.FullName, content);
+        }
+
 
         private Uri GetValidUrlOrNull(string urlStr)
         {
             if (urlStr.Contains('#'))
                 urlStr = urlStr.Remove(urlStr.IndexOf('#'));
+            if (urlStr.Contains('?'))
+                urlStr = urlStr.Remove(urlStr.IndexOf('?'));
 
             Uri linkUrl;
 
@@ -261,6 +293,22 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                     readStream.Close();
                     return str;
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"For url: {urlAddress} exception: {ex} occured!");
+            }
+            return null;
+        }
+
+        private readonly HtmlWeb web = new HtmlWeb();
+        private string GetDocument3(Uri urlAddress)
+        {
+            try
+            {
+                var document = web.Load(urlAddress.ToString());
+                if(document?.DocumentNode?.InnerHtml != null)
+                return document.DocumentNode.InnerHtml;
             }
             catch (Exception ex)
             {
