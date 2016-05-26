@@ -16,8 +16,6 @@ using HtmlAgilityPack;
 namespace WebIndexer
 {
     /* TODO:
-     * 1. https://en.wikipedia.org/wiki/Robots_exclusion_standard
-     * 2. download of documents and saving on dics
      * 3.
 c/ analiza grafu połączeń między dokumentami: liczba wierz. i łuków, rozkłady stopni (in, out), najkrótsze ścieżki (wszystkie pary), średnia odległość, średnica grafu, podział na klastry (współczynniki klastryzacji), odporność na ataki i awarie (zmiany grafu przy usuwaniu wierz. losowych oraz maks. stop.) (10p)
 d/ wybrane 2 parametry (z obszernej literatury na ten temat), inne niz powyżej (5p)
@@ -56,6 +54,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             }
         }
 
+        private Regex metaNameNoIndex = new Regex(@"meta\s+name\s*=\s*""\s*robots\s*""\s*content\s*=\s*""\s*noindex\s*""\s*",RegexOptions.Compiled|RegexOptions.IgnoreCase);
 
         public async Task Analyze(string domain)
         {
@@ -64,12 +63,18 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             var illegalChars = Path.GetInvalidPathChars();
             var windowsIllegalChars = @"\/:".ToCharArray();
             _domainDirectory = new string(_domain.ToString().Where(c => !illegalChars.Contains(c) && !windowsIllegalChars.Contains(c)).ToArray());
+
+            AnalyzeRobotsTxt();
             // _domain = GetValidUrlOrNull(domain);
             //if (_domain == null)
             //  return Task.Delay(1);
             _documents.Clear();
-            _documents[_domain] = new WebDocument() {AbsoluteUrl = _domain};
-                var stw = Stopwatch.StartNew();
+           
+
+          //  if (!_disallowedUrls.Contains(_domain))
+          //  {
+                var stw = Stopwatch.StartNew();_documents[_domain] = new WebDocument() {AbsoluteUrl = _domain};
+
                 await AnalyzeUrl(_domain,null);
             foreach (var webDocument in _documents)
             {
@@ -77,13 +82,52 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                 if (!webDocument.Value.Analyzed)
                     _documents.TryRemove(webDocument.Key,out toRemove);
             }
-                stw.Stop();
-                _progressHandler.Report(new UrlReport($"Pages count: {_documents.Count}{Environment.NewLine}Time: {stw.Elapsed.TotalMilliseconds}ms{Environment.NewLine}Speed: {_documents.Count/stw.Elapsed.TotalSeconds} pages/second"));
+                stw.Stop();            _progressHandler.Report(new UrlReport($"Pages count: {_documents.Count}{Environment.NewLine}Time: {stw.Elapsed.TotalMilliseconds}ms{Environment.NewLine}Speed: {_documents.Count/stw.Elapsed.TotalSeconds} pages/second"));
+  
+           // }else
+          //  await Task.Delay(1);
         }
 
+        private async void AnalyzeRobotsTxt()
+        {
+            var robotsUri = new Uri(_domain,"/robots.txt");
+            var robotsTxt = await GetDocument(robotsUri);
+
+            if (robotsTxt == null) return;
+
+            var disallowedUrlsList = new List<Uri>();
+
+            var lines = robotsTxt.Split('\n');
+
+            for (int i = 0; i < lines.Length; i++)
+                if (_userAgentRegex.IsMatch(lines[i]))
+                    for (i=i+1; i < lines.Length; i++)
+                    {
+                        var match = _disallowRegex.Match(lines[i]);
+
+                        if (match.Success)
+                        {
+                            disallowedUrlsList.Add(match.Groups[1].Value == "/"
+                                ? _domain
+                                : new Uri(_domain, new Uri(match.Groups[1].Value)));
+                        }
+                        else
+                            break;
+                    }
+
+            _disallowedUrls = disallowedUrlsList.ToArray();
+        }
+
+        private readonly Regex _userAgentRegex = new Regex(@"User-agent\s*:\s*\*", RegexOptions.Compiled|RegexOptions.IgnoreCase);
+        private readonly Regex _disallowRegex = new Regex(@"Disallow\s*:\s*(.+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+
+        private Uri[] _disallowedUrls;
 
         private async Task AnalyzeUrl(Uri url, Uri sourceUrl)
         {
+           // if(_disallowedUrls.Any(u => u.IsBaseOf(url)))
+             //   return;
             _documents[url].Analyzed = true;
             var stopwatch = Stopwatch.StartNew();//new Stopwatch();
 
@@ -105,8 +149,8 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                 _documents[sourceUrl].OutLinks.Add(url);
                 _documents[url].InLinks.Add(sourceUrl);
             }
+
             //2. save document
-            //TODO: save
             SaveDocument(url,str);
 
             var tasks = new ConcurrentBag<Task>();
@@ -118,7 +162,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             {
                 var linkUrl = GetValidUrlOrNull(match.Groups[1].Value);
 
-                if (linkUrl == null || _invalidUrls.Contains(linkUrl))
+                if (linkUrl == null || _invalidUrls.Contains(linkUrl)|| _disallowedUrls.Any(u => u.IsBaseOf(linkUrl)))
                     //continue;
                     return;
 
@@ -200,7 +244,6 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             return linkUrl;
         }
 
-
         private async Task<string> GetDocument(Uri urlAddress)
         {
             string str=null;
@@ -208,17 +251,12 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             {
                 using (HttpResponseMessage response = await client.GetAsync(urlAddress))
                 {
-                    if (response.IsSuccessStatusCode) 
-                    using (HttpContent content = response.Content)
-                    {
-                     //   Debug.WriteLine(content.Headers.ContentType.MediaType);
-                    if (content.Headers.ContentType.MediaType.ToLower().Contains("html"))
-                        str = await content.ReadAsStringAsync();
-                 //  // else
-                  //  {
-                  //      str = null;
-                 //   }
-                }
+                    if (response.IsSuccessStatusCode)
+                        using (HttpContent content = response.Content)
+                        {
+                            if (content.Headers.ContentType.MediaType.ToLower().Contains("html")|| content.Headers.ContentType.MediaType.ToLower().Contains("text"))
+                                str = await content.ReadAsStringAsync();
+                        }
                }
             }
             catch (Exception ex)
@@ -228,7 +266,6 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
             return str;
         }
-
 
         private async Task<string> GetDocumentOld(Uri urlAddress)
         {
