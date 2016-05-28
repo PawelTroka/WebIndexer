@@ -32,12 +32,12 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
       //  private readonly DomainGraph _domainGraph = new DomainGraph();
         private readonly ConcurrentBag<Uri> _invalidUrls = new ConcurrentBag<Uri>();
-        private readonly IProgress<UrlReport> _progressHandler;
+        private readonly IProgress<ReportBack> _progressHandler;
         private Uri _domain;
 
         private readonly Regex aHrefRegex = new Regex(@"<a\s+(?:[^>]*?\s+)?href=""([^""]*)""", RegexOptions.Compiled);
 
-        public WebCrawler(IProgress<UrlReport> progressHandler)
+        public WebCrawler(IProgress<ReportBack> progressHandler)
         {
             _progressHandler = progressHandler;
             client.DefaultRequestHeaders.Accept.Clear();
@@ -85,19 +85,19 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                 if (!webDocument.Value.Analyzed)
                     _documents.TryRemove(webDocument.Key,out toRemove);
             }
-                stw.Stop();            _progressHandler.Report(new UrlReport($"Pages count: {_documents.Count}{Environment.NewLine}Time: {stw.Elapsed.TotalMilliseconds}ms{Environment.NewLine}Speed: {_documents.Count/stw.Elapsed.TotalSeconds} pages/second"));
+                stw.Stop();            _progressHandler.Report(new ReportBack($"Pages count: {_documents.Count}{Environment.NewLine}Time: {stw.Elapsed.TotalMilliseconds}ms{Environment.NewLine}Speed: {_documents.Count/stw.Elapsed.TotalSeconds} pages/second"));
 
 
-            AnalyzeGraph();
+                await  AnalyzeGraph();
 
 
             // }else
             //  await Task.Delay(1);
         }
 
-        private void AnalyzeGraph()
+        private async Task AnalyzeGraph()
         {     
-            _progressHandler.Report(new UrlReport($"Vertices count: {_documents.Count}"));//liczba wierz.
+            _progressHandler.Report(new ReportBack($"Vertices count: {_documents.Count}"));//liczba wierz.
 
    
             var inEdgesCount = _documents.Values.Aggregate(0, (c, d) => c += d.Indegree);
@@ -106,7 +106,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             if(inEdgesCount != outEdgesCount)
                 throw new Exception();
 
-            _progressHandler.Report(new UrlReport($"Arrows count: {inEdgesCount}"));//liczba łuków
+            _progressHandler.Report(new ReportBack($"Arrows count: {inEdgesCount}"));//liczba łuków
 
 
             //rozkłady stopni (in, out)
@@ -118,28 +118,14 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             
             if (PrintShortestPaths == true)//najkrótsze ścieżki (wszystkie pary)
             {
-                var urls = _documents.Keys;
-                var str = new StringBuilder();
+                var str = await BuildPaths(floydWarshall);
 
-
-                foreach (var url1 in urls)
-                {
-                    foreach (var url2 in urls)
-                    {
-                        str.AppendLine($"Path from {url1} to {url2}");
-
-                        var path = floydWarshall.GetPath(url1, url2);
-                        foreach (var uri in path)
-                            str.AppendLine(uri.ToString());
-                    }
-                }
-
-                _progressHandler.Report(new UrlReport(str.ToString()));
+                _progressHandler.Report(new ReportBack(str,ReportStatus.ShortestPaths));
             }
 
-            _progressHandler.Report(new UrlReport($"Average distance: {floydWarshall.GetAverageDistance()}"));//średnia odległość
+            _progressHandler.Report(new ReportBack($"Average distance: {floydWarshall.GetAverageDistance()}"));//średnia odległość
 
-            _progressHandler.Report(new UrlReport($"Diameter: {floydWarshall.GetDiameter()}"));//średnica grafu
+            _progressHandler.Report(new ReportBack($"Diameter: {floydWarshall.GetDiameter()}"));//średnica grafu
 
             //podział na klastry (współczynniki klastryzacji)
 
@@ -149,6 +135,34 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             //wybrane 2 parametry(z obszernej literatury na ten temat), inne niz powyżej(5p)
         }
 
+        private async Task<string> BuildPaths(FloydWarshall floydWarshall)
+        {
+           return await Task.Run(() =>
+            {
+                var urls = _documents.Keys;
+                var str = new StringBuilder();
+
+                Parallel.ForEach(urls, url1 =>
+                {
+                    foreach (var url2 in urls)
+                    {
+                        var path = floydWarshall.GetPath(url1, url2);
+                        var pathBuilder = new StringBuilder();
+                        foreach (var uri in path)
+                            pathBuilder.AppendLine(uri.ToString());
+
+                        lock (_lockObject)
+                        {
+                            str.AppendLine($"Path from {url1} to {url2}");
+                            str.AppendLine(pathBuilder.ToString());
+                        }
+                    }
+                });
+                return str.ToString();
+            });
+        }
+
+        private readonly object _lockObject = new object();
         private async void AnalyzeRobotsTxt()
         {
             var robotsUri = new Uri(_domain,"/robots.txt");
@@ -244,7 +258,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
             await Task.WhenAll(tasks);
 
-            _progressHandler.Report(new UrlReport(url, ReportStatus.UrlProcessed)); //_progressHandler.Report($"{url} - OK!");
+            _progressHandler.Report(new ReportBack(url, ReportStatus.UrlProcessed)); //_progressHandler.Report($"{url} - OK!");
         }
 
         private string _domainDirectory;

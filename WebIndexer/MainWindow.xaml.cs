@@ -13,7 +13,7 @@ namespace WebIndexer
         public MainWindow()
         {
             InitializeComponent();
-            webCrawler = new WebCrawler(new Progress<UrlReport>(s =>
+            webCrawler = new WebCrawler(new Progress<ReportBack>(s =>
             {
                 switch (s.Status)
                 {

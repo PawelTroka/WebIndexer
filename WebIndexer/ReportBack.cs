@@ -2,18 +2,24 @@
 
 namespace WebIndexer
 {
-    internal class UrlReport
+    internal class ReportBack
     {
-        public UrlReport(Uri url, ReportStatus reportStatus)
+        public ReportBack(Uri url, ReportStatus reportStatus)
         {
             Url = url;
             Status = reportStatus;
         }
 
-        public UrlReport(string message)
+        public ReportBack(string message)
         {
             this.Message = message;
             Status=ReportStatus.Information;
+        }
+
+        public ReportBack(string message, ReportStatus reportStatus)
+        {
+            this.Message = message;
+            Status = reportStatus;
         }
 
         public ReportStatus Status { get; }
