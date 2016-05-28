@@ -83,9 +83,44 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                     _documents.TryRemove(webDocument.Key,out toRemove);
             }
                 stw.Stop();            _progressHandler.Report(new UrlReport($"Pages count: {_documents.Count}{Environment.NewLine}Time: {stw.Elapsed.TotalMilliseconds}ms{Environment.NewLine}Speed: {_documents.Count/stw.Elapsed.TotalSeconds} pages/second"));
-  
-           // }else
-          //  await Task.Delay(1);
+
+
+            AnalyzeGraph();
+
+
+            // }else
+            //  await Task.Delay(1);
+        }
+
+        private void AnalyzeGraph()
+        {     
+            _progressHandler.Report(new UrlReport($"Vertices count: {_documents.Count}"));//liczba wierz.
+
+   
+            var inEdgesCount = _documents.Values.Aggregate(0, (c, d) => c += d.Indegree);
+            var outEdgesCount = _documents.Values.Aggregate(0, (c, d) => c += d.Outdegree);
+
+            if(inEdgesCount != outEdgesCount)
+                throw new Exception();
+
+            _progressHandler.Report(new UrlReport($"Arrows count: {inEdgesCount}"));//liczba łuków
+
+
+            //rozkłady stopni (in, out)
+            //done in graph
+
+            //najkrótsze ścieżki (wszystkie pary)
+
+            //średnia odległość
+
+            //średnica grafu
+
+            //podział na klastry (współczynniki klastryzacji)
+
+            //odporność na ataki i awarie (zmiany grafu przy usuwaniu wierz. losowych oraz maks. stop.)
+
+
+            //wybrane 2 parametry(z obszernej literatury na ten temat), inne niz powyżej(5p)
         }
 
         private async void AnalyzeRobotsTxt()
@@ -162,7 +197,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             {
                 var linkUrl = GetValidUrlOrNull(match.Groups[1].Value);
 
-                if (linkUrl == null || _invalidUrls.Contains(linkUrl)|| _disallowedUrls.Any(u => u.IsBaseOf(linkUrl)))
+                if (linkUrl == null || _invalidUrls.Contains(linkUrl)|| _disallowedUrls?.Any(u => u.IsBaseOf(linkUrl))==true)
                     //continue;
                     return;
 
