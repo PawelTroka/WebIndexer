@@ -55,6 +55,8 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             }
         }
 
+        public bool? PrintShortestPaths { get; set; }
+
         private Regex metaNameNoIndex = new Regex(@"meta\s+name\s*=\s*""\s*robots\s*""\s*content\s*=\s*""\s*noindex\s*""\s*",RegexOptions.Compiled|RegexOptions.IgnoreCase);
 
         public async Task Analyze(string domain)
@@ -110,14 +112,34 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             //rozkłady stopni (in, out)
             //done in graph
 
-            //????????????????????????????????????????????????????//najkrótsze ścieżki (wszystkie pary)
-
             var floydWarshall = new FloydWarshall(_documents);
             floydWarshall.DoWork();
 
-            _progressHandler.Report(new UrlReport($"Arrows count: {floydWarshall.GetAverageDistance()}"));//średnia odległość
+            
+            if (PrintShortestPaths == true)//najkrótsze ścieżki (wszystkie pary)
+            {
+                var urls = _documents.Keys;
+                var str = new StringBuilder();
 
-            _progressHandler.Report(new UrlReport($"Arrows count: {floydWarshall.GetDiameter()}"));//średnica grafu
+
+                foreach (var url1 in urls)
+                {
+                    foreach (var url2 in urls)
+                    {
+                        str.AppendLine($"Path from {url1} to {url2}");
+
+                        var path = floydWarshall.GetPath(url1, url2);
+                        foreach (var uri in path)
+                            str.AppendLine(uri.ToString());
+                    }
+                }
+
+                _progressHandler.Report(new UrlReport(str.ToString()));
+            }
+
+            _progressHandler.Report(new UrlReport($"Average distance: {floydWarshall.GetAverageDistance()}"));//średnia odległość
+
+            _progressHandler.Report(new UrlReport($"Diameter: {floydWarshall.GetDiameter()}"));//średnica grafu
 
             //podział na klastry (współczynniki klastryzacji)
 
@@ -222,7 +244,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
             await Task.WhenAll(tasks);
 
-            _progressHandler.Report(new UrlReport(url, UrlStatus.Processed)); //_progressHandler.Report($"{url} - OK!");
+            _progressHandler.Report(new UrlReport(url, ReportStatus.UrlProcessed)); //_progressHandler.Report($"{url} - OK!");
         }
 
         private string _domainDirectory;
@@ -378,6 +400,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
         }
 
         private readonly HtmlWeb web = new HtmlWeb();
+
         private string GetDocument3(Uri urlAddress)
         {
             try

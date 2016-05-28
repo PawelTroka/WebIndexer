@@ -4,19 +4,19 @@ namespace WebIndexer
 {
     internal class UrlReport
     {
-        public UrlReport(Uri url, UrlStatus urlStatus)
+        public UrlReport(Uri url, ReportStatus reportStatus)
         {
             Url = url;
-            Status = urlStatus;
+            Status = reportStatus;
         }
 
         public UrlReport(string message)
         {
             this.Message = message;
-            Status=UrlStatus.Info;
+            Status=ReportStatus.Information;
         }
 
-        public UrlStatus Status { get; }
+        public ReportStatus Status { get; }
         public Uri Url { get; }
 
         public string Message { get; }

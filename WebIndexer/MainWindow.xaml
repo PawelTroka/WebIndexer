@@ -7,22 +7,38 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="559.375" Width="766.667">
     <Grid>
-        <TextBox x:Name="domainTextBox" HorizontalAlignment="Left" Height="35" Margin="246,38,0,0" TextWrapping="Wrap"
-                 Text="https://pomoc.pg.gda.pl" VerticalAlignment="Top" Width="347" FontSize="20" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="155" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+
+        <Canvas Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Top">
+
+            <TextBox x:Name="domainTextBox" HorizontalAlignment="Left" Height="35" Margin="246,38,0,0" TextWrapping="Wrap"
+                 Text="http://www.sportowapolitechnika.pl" VerticalAlignment="Top" Width="347" FontSize="20" />
         <Button x:Name="startButton" Click="StartButton_OnClick" Content="Start" HorizontalAlignment="Left"
                 Margin="490,78,0,0" VerticalAlignment="Top" Width="103" Height="50" FontSize="20" />
         <Label x:Name="label" Content="Domain:" HorizontalAlignment="Left" Margin="158,34,0,0" VerticalAlignment="Top"
                Height="35" Width="83" FontSize="20" />
-        <Label x:Name="label1" HorizontalAlignment="Left" Margin="0,155,0,0" VerticalAlignment="Top">
-            <TabControl x:Name="tabControl" Height="366" Width="749">
+
+        <Label x:Name="label2" Content="Output:" HorizontalAlignment="Left" Margin="10,129,0,0" VerticalAlignment="Top" />
+        <CheckBox x:Name="printShortestPathsCheckBox" Content="Print shortest paths?" HorizontalAlignment="Left" Margin="490,135,0,0" VerticalAlignment="Top"/>
+ 
+        </Canvas>
+
+        <DockPanel  Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TabControl x:Name="tabControl">
                 <TabItem Header="Processed urls">
                     <Grid Background="#FFE5E5E5">
-                        <RichTextBox x:Name="processedOutputTextBlock" Margin="10" IsReadOnly="True" />
+                        <TextBox x:Name="processedOutputTextBlock" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
+         AcceptsReturn="True" Margin="10" IsReadOnly="True" />
                     </Grid>
                 </TabItem>
                 <TabItem Header="Unprocessed urls">
                     <Grid Background="#FFE5E5E5">
-                        <RichTextBox x:Name="unprocessedOutputTextBlock" Margin="10" IsReadOnly="True" />
+                        <TextBox x:Name="unprocessedOutputTextBlock" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
+         AcceptsReturn="True" Margin="10" IsReadOnly="True" />
                     </Grid>
                 </TabItem>
                 <TabItem Header="Documents">
@@ -52,9 +68,15 @@
 
                     </Grid>
                 </TabItem>
-            </TabControl>
-        </Label>
-        <Label x:Name="label2" Content="Output:" HorizontalAlignment="Left" Margin="10,129,0,0" VerticalAlignment="Top" />
+                <TabItem Header="Shortest paths">
+                    <TextBox x:Name="shortestPathsTextBox"
+                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
+         AcceptsReturn="True" Margin="10" IsReadOnly="True" />
+                </TabItem>
 
+            </TabControl>
+        </DockPanel>
+        
+        
     </Grid>
 </Window>

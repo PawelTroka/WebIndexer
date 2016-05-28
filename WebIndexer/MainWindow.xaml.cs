@@ -15,21 +15,28 @@ namespace WebIndexer
             InitializeComponent();
             webCrawler = new WebCrawler(new Progress<UrlReport>(s =>
             {
-                if (s.Status == UrlStatus.Processed)
+                switch (s.Status)
                 {
-                    processedOutputTextBlock.AppendText(s.Url + Environment.NewLine);
+                    case ReportStatus.UrlProcessed:
+                        processedOutputTextBlock.AppendText(s.Url + Environment.NewLine);
+                        break;
+                    case ReportStatus.Information:
+                        processedOutputTextBlock.AppendText(s.Message + Environment.NewLine);
+                        break;
+                    case ReportStatus.ShortestPaths:
+                        shortestPathsTextBox.AppendText(s.Message + Environment.NewLine);
+                        break;
+                    default:
+                        unprocessedOutputTextBlock.AppendText(s.ToString() + Environment.NewLine);
+                        break;
                 }
-                else if (s.Status == UrlStatus.Info)
-                {
-                    processedOutputTextBlock.AppendText(s.Message + Environment.NewLine);
-                }
-                else unprocessedOutputTextBlock.AppendText(s.ToString() + Environment.NewLine);
             }));
         }
 
         private async void StartButton_OnClick(object sender, RoutedEventArgs e)
         {
             startButton.IsEnabled = false;
+            webCrawler.PrintShortestPaths = printShortestPathsCheckBox.IsChecked;
             await webCrawler.Analyze(domainTextBox.Text);
             startButton.IsEnabled = true;
             treeView.ItemsSource = webCrawler.Documents;
