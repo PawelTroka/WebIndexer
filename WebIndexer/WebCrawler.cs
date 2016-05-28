@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using WebIndexer.Algorithms;
 
 namespace WebIndexer
 {
@@ -109,11 +110,14 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             //rozkłady stopni (in, out)
             //done in graph
 
-            //najkrótsze ścieżki (wszystkie pary)
+            //????????????????????????????????????????????????????//najkrótsze ścieżki (wszystkie pary)
 
-            //średnia odległość
+            var floydWarshall = new FloydWarshall(_documents);
+            floydWarshall.DoWork();
 
-            //średnica grafu
+            _progressHandler.Report(new UrlReport($"Arrows count: {floydWarshall.GetAverageDistance()}"));//średnia odległość
+
+            _progressHandler.Report(new UrlReport($"Arrows count: {floydWarshall.GetDiameter()}"));//średnica grafu
 
             //podział na klastry (współczynniki klastryzacji)
 

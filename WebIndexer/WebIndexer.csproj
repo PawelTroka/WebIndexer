@@ -59,6 +59,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Algorithms\FloydWarshall.cs" />
+    <Compile Include="Collections\MatrixHashTable.cs" />
     <Compile Include="DomainGraph.cs" />
     <Compile Include="UrlReport.cs" />
     <Compile Include="UrlStatus.cs" />
