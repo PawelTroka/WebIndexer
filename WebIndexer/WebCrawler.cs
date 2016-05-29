@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 using WebIndexer.Algorithms;
@@ -60,7 +61,12 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
         public async Task Analyze(string domain)
         {
+            SetThreading();
+
+
             _domain = new Uri(domain);
+
+
 
             SetDomainDirectory();
 
@@ -91,6 +97,26 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             //  await Task.Delay(1);
         }
 
+        private void SetThreading()
+        {
+            int minIO, minThreads;
+            ThreadPool.GetMinThreads(out minThreads, out minIO);
+            ThreadPool.SetMinThreads(1, minIO);
+
+            int maxThreads, maxThreadsAsync;
+            ThreadPool.GetMaxThreads(out maxThreads, out maxThreadsAsync);
+
+            Debug.WriteLine($"Max threads:{maxThreads}, max async I/O:{maxThreadsAsync}");
+            ThreadPool.SetMaxThreads(MaxThreads, maxThreadsAsync);
+
+            ThreadPool.GetMaxThreads(out maxThreads, out maxThreadsAsync);
+            Debug.WriteLine($"Max threads:{maxThreads}, max async I/O:{maxThreadsAsync}");
+
+
+            options = new ParallelOptions() { MaxDegreeOfParallelism = MaxConcurrency };
+        }
+
+        public int MaxConcurrency { get; set; } = 8;
         private void ClearGraph()
         {
             foreach (var webDocument in _documents)
@@ -128,6 +154,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
         private void SetDomainDirectory()
         {
             var illegalChars = Path.GetInvalidPathChars();
+            var illegalChars2 = Path.GetInvalidFileNameChars();
             var windowsIllegalChars = @"\/:".ToCharArray();
             _domainDirectory =
                 new string(
@@ -169,6 +196,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                     //var str = await Task.Run(() => floydWarshall.BuildPaths());//floydWarshall.BuildPathsAsync();//Task.Run(()=> BuildPaths(floydWarshall));
                     var str = floydWarshall.BuildPaths();
                     _progressHandler.Report(new ReportBack(str, ReportStatus.Information));
+                File.WriteAllText("paths.txt",str);
                 
             });
 }
@@ -176,6 +204,8 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             var pageRank = new PageRank(_documents);
             pageRank.DoWork();
 
+
+            InOutDistribution();
 
             // await Task.Delay(1);
 
@@ -186,6 +216,49 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
 
             //wybrane 2 parametry(z obszernej literatury na ten temat), inne niz powyżej(5p)
+        }
+
+        private void InOutDistribution()
+        {
+            var distribution = _documents.Values.ToList();
+
+            distribution.Sort((d1,d2) => d2.PageRank.CompareTo(d1.PageRank));
+
+            var pagerankFile = new StreamWriter("pagerank.txt");
+            foreach (var document in distribution)
+            {
+                pagerankFile.WriteLine($"{document.AbsoluteUrl} {document.PageRank}");
+            }
+            pagerankFile.Close();
+
+
+            InDistribution(distribution);
+            OutDistribution(distribution);
+
+        }
+
+        private static void InDistribution(List<WebDocument> distribution)
+        {
+            distribution.Sort((d1, d2) => d2.Indegree.CompareTo(d1.Indegree));
+
+            var inDistributionFile = new StreamWriter("inDistribution.txt");
+            foreach (var document in distribution)
+            {
+                inDistributionFile.WriteLine($"{document.AbsoluteUrl} {document.Indegree}");
+            }
+            inDistributionFile.Close();
+        }
+
+        private static void OutDistribution(List<WebDocument> distribution)
+        {
+            distribution.Sort((d1, d2) => d2.Outdegree.CompareTo(d1.Outdegree));
+
+            var outDistributionFile = new StreamWriter("outDistribution.txt");
+            foreach (var document in distribution)
+            {
+                outDistributionFile.WriteLine($"{document.AbsoluteUrl} {document.Outdegree}");
+            }
+            outDistributionFile.Close();
         }
 
         private readonly object _lockObject = new object();
@@ -223,7 +296,9 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
         private readonly Regex _userAgentRegex = new Regex(@"User-agent\s*:\s*\*", RegexOptions.Compiled|RegexOptions.IgnoreCase);
         private readonly Regex _disallowRegex = new Regex(@"Disallow\s*:\s*(.+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+        public int MaxThreads { get; set; } = 20;
 
+        ParallelOptions options;
         private Uri[] _disallowedUrls;
 
         private async Task AnalyzeUrl(Uri url, Uri sourceUrl)
@@ -260,7 +335,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             var matches = aHrefRegex.Matches(str).Cast<Match>();
             //3. analyze document
             //foreach (Match match in matches)      
-            Parallel.ForEach(matches,  match =>
+            Parallel.ForEach(matches, options,  match =>
             {
                 var linkUrl = GetValidUrlOrNull(match.Groups[1].Value);
 
@@ -306,7 +381,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                     filename += '/';
                 filename += "index.html";
             }
-
+           
             filename = Path.Combine(_domainDirectory, filename);
             System.IO.FileInfo file = new System.IO.FileInfo(filename);
             file.Directory.Create(); // If the directory already exists, this method does nothing.

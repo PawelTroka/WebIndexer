@@ -38,6 +38,8 @@ namespace WebIndexer
         {
             startButton.IsEnabled = false;
             webCrawler.PrintShortestPaths = printShortestPathsCheckBox.IsChecked;
+            webCrawler.MaxThreads = int.Parse(slider.Text);
+            webCrawler.MaxConcurrency = int.Parse(slider_Copy.Text);
             await webCrawler.Analyze(domainTextBox.Text);
             startButton.IsEnabled = true;
             treeView.ItemsSource = webCrawler.Documents;

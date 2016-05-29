@@ -15,16 +15,29 @@
 
         <Canvas Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Top">
 
-            <TextBox x:Name="domainTextBox" HorizontalAlignment="Left" Height="35" Margin="246,38,0,0" TextWrapping="Wrap"
-                 Text="http://www.sportowapolitechnika.pl" VerticalAlignment="Top" Width="347" FontSize="20" />
-        <Button x:Name="startButton" Click="StartButton_OnClick" Content="Start" HorizontalAlignment="Left"
+            <ComboBox x:Name="domainTextBox" HorizontalAlignment="Left" Height="35" Margin="246,38,0,0" 
+                 Text="http://www.sportowapolitechnika.pl" VerticalAlignment="Top" Width="347" FontSize="20" IsEditable="True" >
+                <ComboBoxItem Content="http://cui.pg.edu.pl"/>
+                <!--45 pages, diameter 2-->
+                <ComboBoxItem Content="http://pg.edu.pl"/>
+                <!--4967 pages-->
+                <ComboBoxItem Content="http://www.sportowapolitechnika.pl" />
+                <!--208 pages-->
+                <ComboBoxItem Content="http://csa.pg.edu.pl"></ComboBoxItem>
+                <!--89 pages-->
+                <ComboBoxItem Content="http://cas.pg.edu.pl"></ComboBoxItem>
+                <!--22 pages-->
+                <ComboBoxItem Content="https://pomoc.pg.gda.pl"></ComboBoxItem>
+                <!--0 pages, disallow-->
+            </ComboBox>
+            <Button x:Name="startButton" Click="StartButton_OnClick" Content="Start" HorizontalAlignment="Left"
                 Margin="490,78,0,0" VerticalAlignment="Top" Width="103" Height="50" FontSize="20" />
-        <Label x:Name="label" Content="Domain:" HorizontalAlignment="Left" Margin="158,34,0,0" VerticalAlignment="Top"
+            <Label x:Name="label" Content="Domain:" HorizontalAlignment="Left" Margin="158,34,0,0" VerticalAlignment="Top"
                Height="35" Width="83" FontSize="20" />
 
-        <Label x:Name="label2" Content="Output:" HorizontalAlignment="Left" Margin="10,129,0,0" VerticalAlignment="Top" />
-        <CheckBox x:Name="printShortestPathsCheckBox" Content="Print shortest paths?" HorizontalAlignment="Left" Margin="490,135,0,0" VerticalAlignment="Top"/>
- 
+            <Label x:Name="label2" Content="Output:" HorizontalAlignment="Left" Margin="10,129,0,0" VerticalAlignment="Top" />
+            <CheckBox x:Name="printShortestPathsCheckBox" Content="Print shortest paths?" HorizontalAlignment="Left" Margin="490,135,0,0" VerticalAlignment="Top"/>
+
         </Canvas>
 
         <DockPanel  Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -79,7 +92,11 @@
 
             </TabControl>
         </DockPanel>
-        
-        
+        <Label x:Name="label1" Content="Max threads:" HorizontalAlignment="Left" Margin="164,88,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="slider" HorizontalAlignment="Left" Margin="164,119,0,0" VerticalAlignment="Top" Width="78" Height="26" Text="1023"/>
+        <Label x:Name="label1_Copy" Content="Max concurency:" HorizontalAlignment="Left" Margin="262,88,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="slider_Copy" HorizontalAlignment="Left" Margin="262,119,0,0" VerticalAlignment="Top" Width="99" Height="26" Text="8"/>
+
+
     </Grid>
 </Window>
