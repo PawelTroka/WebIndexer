@@ -169,19 +169,47 @@ namespace WebIndexer.Algorithms
 
             return value/count;
         }
-
+        //https://en.wikipedia.org/wiki/Distance_(graph_theory)
         /* The diameter d of a graph is the maximum eccentricity of any vertex in the graph.
          * That is, d it is the greatest distance between any pair of vertices or, alternatively, d = \max_{v \in V}\epsilon(v).
          * To find the diameter of a graph, first find the shortest path between each pair of vertices.
          * The greatest length of any of these paths is the diameter of the graph.*/
-        public ulong GetDiameter()
+        public ulong GetDiameter()//check cas
         {
             ulong diameter = ulong.MinValue;
             foreach (var u in keySpace)
-                foreach (var v in keySpace)
-                    if (dist[u, v] != ulong.MaxValue && dist[u, v] > diameter)
-                        diameter = dist[u, v];
+            {
+                var eccentricity = GetEccentricity(u);
+                //foreach (var v in keySpace)
+                if (eccentricity > diameter) //if (dist[u, v] != ulong.MaxValue && dist[u, v] > diameter)
+                    diameter = eccentricity;//diameter = dist[u, v];}
+            }
             return diameter;
+        }
+
+
+        /*
+         * The radius r of a graph is the minimum eccentricity of any vertex or, in symbols, r = \min_{v \in V} \epsilon(v).
+         */
+        public ulong GetRadius()
+        {
+            var radius = ulong.MaxValue - 1;
+            foreach (var u in keySpace)
+            {
+                var eccentricity = GetEccentricity(u);
+                if (eccentricity > ulong.MinValue && eccentricity < radius)
+                    radius = eccentricity;
+            }
+            return radius;
+        }
+
+        private ulong GetEccentricity(Uri v)
+        {
+            var distance = ulong.MinValue;
+            foreach (var u in keySpace)
+                if (dist[v, u] != ulong.MaxValue && dist[v, u] > distance)
+                    distance = dist[v, u];
+            return distance;
         }
 
         private IDictionary<Uri, WebDocument> _documents;

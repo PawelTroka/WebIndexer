@@ -169,14 +169,18 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             var inEdgesCount = _documents.Values.Aggregate(0, (c, d) => c += d.Indegree);
             var outEdgesCount = _documents.Values.Aggregate(0, (c, d) => c += d.Outdegree);
 
+
             //if(inEdgesCount != outEdgesCount)
-                //throw new Exception();
+            //throw new Exception();
 
             _progressHandler.Report(new ReportBack($"Arrows count: {inEdgesCount}"));//liczba łuków
 
-            _progressHandler.Report(new ReportBack($"Average in/out-degree: {1.0*inEdgesCount/_documents.Count}"));
 
-          //  _progressHandler.Report(new ReportBack($"Average indegree: {inEdgesCount / _documents.Count}"));
+
+            _progressHandler.Report(new ReportBack($"Average indegree: {1.0*inEdgesCount/_documents.Count}"));
+            _progressHandler.Report(new ReportBack($"Average outdegree: {1.0 * outEdgesCount / _documents.Count}"));
+
+            //  _progressHandler.Report(new ReportBack($"Average indegree: {inEdgesCount / _documents.Count}"));
 
 
             //rozkłady stopni (in, out)
@@ -188,7 +192,8 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             _progressHandler.Report(new ReportBack($"Average distance: {floydWarshall.GetAverageDistance()}"));//średnia odległość
 
             _progressHandler.Report(new ReportBack($"Diameter: {floydWarshall.GetDiameter()}"));//średnica grafu
-                if (PrintShortestPaths == true) //najkrótsze ścieżki (wszystkie pary)
+            _progressHandler.Report(new ReportBack($"Radius: {floydWarshall.GetRadius()}"));
+            if (PrintShortestPaths == true) //najkrótsze ścieżki (wszystkie pary)
                 {
             await Task.Run(() =>
             {
@@ -204,6 +209,8 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             var pageRank = new PageRank(_documents);
             pageRank.DoWork();
 
+            var pagerankSum = _documents.Values.Aggregate(0.0, (s, d) => s += d.PageRank);
+            _progressHandler.Report(new ReportBack($"Average pagerank: {pagerankSum / _documents.Count}"));
 
             InOutDistribution();
 
