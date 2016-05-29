@@ -34,7 +34,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
         private readonly IProgress<ReportBack> _progressHandler;
         private Uri _domain;
 
-        private readonly Regex aHrefRegex = new Regex(@"<a\s+(?:[^>]*?\s+)?href=""([^""]*)""", RegexOptions.Compiled);
+        private readonly Regex aHrefRegex = new Regex(@"<a\s+(?:[^>]*?\s+)?href=""([^""]*)""", RegexOptions.Compiled|RegexOptions.IgnoreCase);
 
         public WebCrawler(IProgress<ReportBack> progressHandler)
         {
@@ -77,12 +77,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             _documents[_domain] = new WebDocument() {AbsoluteUrl = _domain};
 
                 await AnalyzeUrl(_domain,null);
-            foreach (var webDocument in _documents)
-            {
-                WebDocument toRemove;
-                if (!webDocument.Value.Analyzed)
-                    _documents.TryRemove(webDocument.Key,out toRemove);
-            }
+            ClearGraph();
                 stw.Stop();            _progressHandler.Report(new ReportBack($"Pages count: {_documents.Count}{Environment.NewLine}Time: {stw.Elapsed.TotalMilliseconds}ms{Environment.NewLine}Speed: {_documents.Count/stw.Elapsed.TotalSeconds} pages/second"));
 
             var stw2 = Stopwatch.StartNew();
@@ -94,6 +89,40 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
             // }else
             //  await Task.Delay(1);
+        }
+
+        private void ClearGraph()
+        {
+            foreach (var webDocument in _documents)
+            {
+                
+                if (!webDocument.Value.Analyzed || _invalidUrls.Contains(webDocument.Key))
+                {
+                    WebDocument toRemove;
+                    _documents.TryRemove(webDocument.Key, out toRemove);
+
+                    if(!_invalidUrls.Contains(webDocument.Key))
+                        _invalidUrls.Add(toRemove.AbsoluteUrl);
+                }
+            }
+
+            foreach (var webDocument in _documents.Values)
+            {
+                foreach (var invalidUrl in _invalidUrls)
+                {
+                    if (webDocument.OutLinks.Contains(invalidUrl))
+                    {
+                        Uri toRemove;
+                        webDocument.OutLinks.TryTake(out toRemove);
+                    }
+
+                    if (webDocument.InLinks.Contains(invalidUrl))
+                    {
+                        Uri toRemove;
+                        webDocument.InLinks.TryTake(out toRemove);
+                    }
+                }
+            }
         }
 
         private void SetDomainDirectory()
@@ -113,12 +142,12 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             var inEdgesCount = _documents.Values.Aggregate(0, (c, d) => c += d.Indegree);
             var outEdgesCount = _documents.Values.Aggregate(0, (c, d) => c += d.Outdegree);
 
-            if(inEdgesCount != outEdgesCount)
-                throw new Exception();
+            //if(inEdgesCount != outEdgesCount)
+                //throw new Exception();
 
             _progressHandler.Report(new ReportBack($"Arrows count: {inEdgesCount}"));//liczba łuków
 
-            _progressHandler.Report(new ReportBack($"Average in/out-degree: {inEdgesCount/_documents.Count}"));
+            _progressHandler.Report(new ReportBack($"Average in/out-degree: {1.0*inEdgesCount/_documents.Count}"));
 
           //  _progressHandler.Report(new ReportBack($"Average indegree: {inEdgesCount / _documents.Count}"));
 
@@ -159,12 +188,10 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             //wybrane 2 parametry(z obszernej literatury na ten temat), inne niz powyżej(5p)
         }
 
-
-
         private readonly object _lockObject = new object();
+
         private async Task AnalyzeRobotsTxt()
         {
-
             var robotsUri = new Uri(_domain,"/robots.txt");
             var robotsTxt = await GetDocument(robotsUri);
 
@@ -204,10 +231,10 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
            // if(_disallowedUrls.Any(u => u.IsBaseOf(url)))
              //   return;
             _documents[url].Analyzed = true;
-            var stopwatch = Stopwatch.StartNew();//new Stopwatch();
+
 
             //1. download document and measure time
-            stopwatch.Start();
+            var stopwatch = Stopwatch.StartNew();//new Stopwatch();
             var str = await GetDocument(url);//GetDocument3(url);//await GetDocument(url);
             stopwatch.Stop();
 
