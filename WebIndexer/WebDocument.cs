@@ -19,7 +19,7 @@ namespace WebIndexer
         }
 
         public bool Analyzed { get; set; }
-
+        public double PageRank { get; set; }
         public Uri AbsoluteUrl { get; set; }
         public ConcurrentBag<Uri> OutLinks { get; set; } = new ConcurrentBag<Uri>();
         public ConcurrentBag<Uri> InLinks { get; set; } = new ConcurrentBag<Uri>();

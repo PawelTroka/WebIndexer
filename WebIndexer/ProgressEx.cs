@@ -32,7 +32,7 @@ namespace WebIndexer
             // ISSUE: reference to a compiler-generated field
             if (_handler == null && ProgressChanged == null)
                 return;
-            _synchronizationContext.Send(_invokeHandlers, (object)value);
+            _synchronizationContext.Post(_invokeHandlers, (object)value);
         }
 
         void IProgress<T>.Report(T value)

@@ -62,9 +62,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
         {
             _domain = new Uri(domain);
 
-            var illegalChars = Path.GetInvalidPathChars();
-            var windowsIllegalChars = @"\/:".ToCharArray();
-            _domainDirectory = new string(_domain.ToString().Where(c => !illegalChars.Contains(c) && !windowsIllegalChars.Contains(c)).ToArray());
+            SetDomainDirectory();
 
             await AnalyzeRobotsTxt();
             // _domain = GetValidUrlOrNull(domain);
@@ -75,7 +73,8 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
           //  if (!_disallowedUrls.Contains(_domain))
           //  {
-                var stw = Stopwatch.StartNew();_documents[_domain] = new WebDocument() {AbsoluteUrl = _domain};
+                var stw = Stopwatch.StartNew();
+            _documents[_domain] = new WebDocument() {AbsoluteUrl = _domain};
 
                 await AnalyzeUrl(_domain,null);
             foreach (var webDocument in _documents)
@@ -97,6 +96,15 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             //  await Task.Delay(1);
         }
 
+        private void SetDomainDirectory()
+        {
+            var illegalChars = Path.GetInvalidPathChars();
+            var windowsIllegalChars = @"\/:".ToCharArray();
+            _domainDirectory =
+                new string(
+                    _domain.ToString().Where(c => !illegalChars.Contains(c) && !windowsIllegalChars.Contains(c)).ToArray());
+        }
+
         private async Task AnalyzeGraph()
         {     
             _progressHandler.Report(new ReportBack($"Vertices count: {_documents.Count}"));//liczba wierz.
@@ -110,26 +118,39 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
             _progressHandler.Report(new ReportBack($"Arrows count: {inEdgesCount}"));//liczba łuków
 
+            _progressHandler.Report(new ReportBack($"Average in/out-degree: {inEdgesCount/_documents.Count}"));
+
+          //  _progressHandler.Report(new ReportBack($"Average indegree: {inEdgesCount / _documents.Count}"));
+
 
             //rozkłady stopni (in, out)
             //done in graph
 
             var floydWarshall = new FloydWarshall(_documents);
             await floydWarshall.DoWorkAsync();
+
             _progressHandler.Report(new ReportBack($"Average distance: {floydWarshall.GetAverageDistance()}"));//średnia odległość
 
             _progressHandler.Report(new ReportBack($"Diameter: {floydWarshall.GetDiameter()}"));//średnica grafu
-            
-            if (PrintShortestPaths == true)//najkrótsze ścieżki (wszystkie pary)
+                if (PrintShortestPaths == true) //najkrótsze ścieżki (wszystkie pary)
+                {
+            await Task.Run(() =>
             {
-                var str = await Task.Run(() => floydWarshall.BuildPaths());//floydWarshall.BuildPathsAsync();//Task.Run(()=> BuildPaths(floydWarshall));
 
-                _progressHandler.Report(new ReportBack(str,ReportStatus.Information));
-            }
+                    //var str = await Task.Run(() => floydWarshall.BuildPaths());//floydWarshall.BuildPathsAsync();//Task.Run(()=> BuildPaths(floydWarshall));
+                    var str = floydWarshall.BuildPaths();
+                    _progressHandler.Report(new ReportBack(str, ReportStatus.Information));
+                
+            });
+}
 
-           // await Task.Delay(1);
+            var pageRank = new PageRank(_documents);
+            pageRank.DoWork();
 
-           // _progressHandler.Report(new ReportBack("Done"));
+
+            // await Task.Delay(1);
+
+            // _progressHandler.Report(new ReportBack("Done"));
             //podział na klastry (współczynniki klastryzacji)
 
             //odporność na ataki i awarie (zmiany grafu przy usuwaniu wierz. losowych oraz maks. stop.)
@@ -143,6 +164,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
         private readonly object _lockObject = new object();
         private async Task AnalyzeRobotsTxt()
         {
+
             var robotsUri = new Uri(_domain,"/robots.txt");
             var robotsTxt = await GetDocument(robotsUri);
 

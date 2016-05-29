@@ -48,6 +48,9 @@
                                 <DataTemplate>
                                     <TreeViewItem Header="{Binding AbsoluteUrl}">
 
+                                        <TreeViewItem Header="PageRank:" />
+                                        <TreeViewItem Header="{Binding PageRank}" />
+
                                         <TreeViewItem Header="DownloadTime:" />
                                         <TreeViewItem Header="{Binding DownloadTime}" />
 

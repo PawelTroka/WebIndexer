@@ -8,6 +8,8 @@ using WebIndexer.Collections;
 
 namespace WebIndexer.Algorithms
 {
+
+
     class FloydWarshall
     {
         /* https://en.wikipedia.org/wiki/Floyd–Warshall_algorithm
