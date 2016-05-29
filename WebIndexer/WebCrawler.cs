@@ -9,7 +9,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
 using WebIndexer.Algorithms;
@@ -67,7 +66,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             var windowsIllegalChars = @"\/:".ToCharArray();
             _domainDirectory = new string(_domain.ToString().Where(c => !illegalChars.Contains(c) && !windowsIllegalChars.Contains(c)).ToArray());
 
-            AnalyzeRobotsTxt();
+            await AnalyzeRobotsTxt();
             // _domain = GetValidUrlOrNull(domain);
             //if (_domain == null)
             //  return Task.Delay(1);
@@ -87,9 +86,12 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             }
                 stw.Stop();            _progressHandler.Report(new ReportBack($"Pages count: {_documents.Count}{Environment.NewLine}Time: {stw.Elapsed.TotalMilliseconds}ms{Environment.NewLine}Speed: {_documents.Count/stw.Elapsed.TotalSeconds} pages/second"));
 
-
-                await  AnalyzeGraph();
-
+            var stw2 = Stopwatch.StartNew();
+            
+            await AnalyzeGraph();
+            
+            stw2.Stop();
+            _progressHandler.Report(new ReportBack($"Graph analysis took {stw2.ElapsedMilliseconds}ms"));
 
             // }else
             //  await Task.Delay(1);
@@ -113,20 +115,21 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             //done in graph
 
             var floydWarshall = new FloydWarshall(_documents);
-            floydWarshall.DoWork();
-
-            
-            if (PrintShortestPaths == true)//najkrótsze ścieżki (wszystkie pary)
-            {
-                var str = await BuildPaths(floydWarshall);
-
-                _progressHandler.Report(new ReportBack(str,ReportStatus.ShortestPaths));
-            }
-
+            await floydWarshall.DoWorkAsync();
             _progressHandler.Report(new ReportBack($"Average distance: {floydWarshall.GetAverageDistance()}"));//średnia odległość
 
             _progressHandler.Report(new ReportBack($"Diameter: {floydWarshall.GetDiameter()}"));//średnica grafu
+            
+            if (PrintShortestPaths == true)//najkrótsze ścieżki (wszystkie pary)
+            {
+                var str = await Task.Run(() => floydWarshall.BuildPaths());//floydWarshall.BuildPathsAsync();//Task.Run(()=> BuildPaths(floydWarshall));
 
+                _progressHandler.Report(new ReportBack(str,ReportStatus.Information));
+            }
+
+           // await Task.Delay(1);
+
+           // _progressHandler.Report(new ReportBack("Done"));
             //podział na klastry (współczynniki klastryzacji)
 
             //odporność na ataki i awarie (zmiany grafu przy usuwaniu wierz. losowych oraz maks. stop.)
@@ -135,35 +138,10 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             //wybrane 2 parametry(z obszernej literatury na ten temat), inne niz powyżej(5p)
         }
 
-        private async Task<string> BuildPaths(FloydWarshall floydWarshall)
-        {
-           return await Task.Run(() =>
-            {
-                var urls = _documents.Keys;
-                var str = new StringBuilder();
 
-                Parallel.ForEach(urls, url1 =>
-                {
-                    foreach (var url2 in urls)
-                    {
-                        var path = floydWarshall.GetPath(url1, url2);
-                        var pathBuilder = new StringBuilder();
-                        foreach (var uri in path)
-                            pathBuilder.AppendLine(uri.ToString());
-
-                        lock (_lockObject)
-                        {
-                            str.AppendLine($"Path from {url1} to {url2}");
-                            str.AppendLine(pathBuilder.ToString());
-                        }
-                    }
-                });
-                return str.ToString();
-            });
-        }
 
         private readonly object _lockObject = new object();
-        private async void AnalyzeRobotsTxt()
+        private async Task AnalyzeRobotsTxt()
         {
             var robotsUri = new Uri(_domain,"/robots.txt");
             var robotsTxt = await GetDocument(robotsUri);
@@ -184,7 +162,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                         {
                             disallowedUrlsList.Add(match.Groups[1].Value == "/"
                                 ? _domain
-                                : new Uri(_domain, new Uri(match.Groups[1].Value)));
+                                : new Uri(_domain, new Uri(match.Groups[1].Value,UriKind.Relative)));
                         }
                         else
                             break;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -43,6 +44,11 @@ namespace WebIndexer.Algorithms
             next = new MatrixHashTable<Uri, Uri, Uri>(keySpace,keySpace);
         }
 
+        public async Task DoWorkAsync()
+        {
+            await Task.Run(() =>DoWork());
+        }
+
         public void DoWork()
         {
             foreach (var u in keySpace)
@@ -62,15 +68,60 @@ namespace WebIndexer.Algorithms
                 foreach (var i in keySpace)
                     foreach (var j in keySpace)
                         /*
-                       if dist[i][k] + dist[k][j] < dist[i][j] then
-                       dist[i][j] ← dist[i][k] + dist[k][j]
-                       next[i][j] ← next[i][k]
-                         */
+                   if dist[i][k] + dist[k][j] < dist[i][j] then
+                   dist[i][j] ← dist[i][k] + dist[k][j]
+                   next[i][j] ← next[i][k]
+                     */
                         if (dist[i, k] + dist[k, j] < dist[i, j])
                         {
                             dist[i, j] = dist[i, k] + dist[k, j];
                             next[i, j] = next[i, k];
                         }
+        
+        }
+
+        public async Task<string> BuildPathsAsync()
+        {
+            var str = new StringBuilder();
+            //foreach (var url1 in keySpace)
+            var tasks = new ConcurrentBag<Task>();
+            Parallel.ForEach(keySpace, url1 =>
+            {
+                foreach (var url2 in keySpace)
+                {
+                    tasks.Add(Task.Run(()=>AppendPath(url1, url2, str)));
+                }
+            });
+            await Task.WhenAll(tasks);
+            return str.ToString();
+        }
+
+        private void AppendPath(Uri url1, Uri url2, StringBuilder str)
+        {
+            var path = this.GetPath(url1, url2);
+            var pathBuilder = new StringBuilder();
+            foreach (var uri in path)
+                pathBuilder.AppendLine(uri.ToString());
+
+              lock (_lockObject)
+            {
+                str.AppendLine($"Path from {url1} to {url2}");
+                str.AppendLine(pathBuilder.ToString());
+            }
+        }
+
+        public string BuildPaths()
+        {
+            var str = new StringBuilder();
+            foreach (var url1 in keySpace)
+            //Parallel.ForEach(urls, url1 =>
+            {
+                foreach (var url2 in keySpace)
+                {
+                    AppendPath(url1, url2, str);
+                }
+            }//);
+            return str.ToString();
         }
 
         /*
@@ -133,5 +184,6 @@ namespace WebIndexer.Algorithms
 
         private IDictionary<Uri, WebDocument> _documents;
         private IReadOnlyCollection<Uri> keySpace;
+        private object _lockObject = new object();
     }
 }

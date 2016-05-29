@@ -62,6 +62,7 @@
     <Compile Include="Algorithms\FloydWarshall.cs" />
     <Compile Include="Collections\MatrixHashTable.cs" />
     <Compile Include="DomainGraph.cs" />
+    <Compile Include="ProgressEx.cs" />
     <Compile Include="ReportBack.cs" />
     <Compile Include="ReportStatus.cs" />
     <Compile Include="WebCrawler.cs" />

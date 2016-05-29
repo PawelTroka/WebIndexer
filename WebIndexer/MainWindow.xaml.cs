@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Threading;
 using System.Windows;
 
 namespace WebIndexer
@@ -13,7 +14,7 @@ namespace WebIndexer
         public MainWindow()
         {
             InitializeComponent();
-            webCrawler = new WebCrawler(new Progress<ReportBack>(s =>
+            webCrawler = new WebCrawler(new ProgressEx<ReportBack>(SynchronizationContext.Current, s =>
             {
                 switch (s.Status)
                 {
