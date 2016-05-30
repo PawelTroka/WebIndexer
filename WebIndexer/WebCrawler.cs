@@ -184,7 +184,15 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
 
             //rozkłady stopni (in, out)
-            //done in graph
+            InOutDistribution();
+
+            var pageRank = new PageRank(_documents);
+            pageRank.DoWork();
+
+            var pagerankSum = _documents.Values.Aggregate(0.0, (s, d) => s += d.PageRank);
+            _progressHandler.Report(new ReportBack($"Average pagerank: {pagerankSum / _documents.Count}"));
+            SavePageRank();
+
 
             var floydWarshall = new FloydWarshall(_documents);
             await floydWarshall.DoWorkAsync();
@@ -206,13 +214,7 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             });
 }
 
-            var pageRank = new PageRank(_documents);
-            pageRank.DoWork();
 
-            var pagerankSum = _documents.Values.Aggregate(0.0, (s, d) => s += d.PageRank);
-            _progressHandler.Report(new ReportBack($"Average pagerank: {pagerankSum / _documents.Count}"));
-
-            InOutDistribution();
 
             // await Task.Delay(1);
 
@@ -225,11 +227,11 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             //wybrane 2 parametry(z obszernej literatury na ten temat), inne niz powyżej(5p)
         }
 
-        private void InOutDistribution()
+        private void SavePageRank()
         {
             var distribution = _documents.Values.ToList();
 
-            distribution.Sort((d1,d2) => d2.PageRank.CompareTo(d1.PageRank));
+            distribution.Sort((d1, d2) => d2.PageRank.CompareTo(d1.PageRank));
 
             var pagerankFile = new StreamWriter("pagerank.txt");
             foreach (var document in distribution)
@@ -237,8 +239,11 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
                 pagerankFile.WriteLine($"{document.AbsoluteUrl} {document.PageRank}");
             }
             pagerankFile.Close();
+        }
 
-
+        private void InOutDistribution()
+        {
+            var distribution = _documents.Values.ToList();
             InDistribution(distribution);
             OutDistribution(distribution);
 

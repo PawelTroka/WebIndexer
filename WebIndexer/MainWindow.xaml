@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WebIndexer"
         mc:Ignorable="d"
-        Title="MainWindow" Height="559.375" Width="766.667">
+        Title="WebIndexer - Pawel Troka" Height="559.375" Width="766.667">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="155" />
