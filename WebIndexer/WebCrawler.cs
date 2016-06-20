@@ -58,7 +58,7 @@ namespace WebIndexer
 
         public bool? PrintShortestPaths { get; set; }
 
-        private Regex metaNameNoIndex =
+        private Regex _metaNameNoIndex =
             new Regex(@"meta\s+name\s*=\s*""\s*robots\s*""\s*content\s*=\s*""\s*noindex\s*""\s*",
                 RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -91,9 +91,10 @@ namespace WebIndexer
             {
                 _progressHandler.Report(new ReportBack($@"{Environment.NewLine}---------------------------------------------------{Environment.NewLine}{topic1}", ReportStatus.ProbabilisticLSA));
 
-                var prob = double.MinValue;
+                
                 foreach (var uri in plsa.TopicByDocumentMatrix.Key2Space)
                 {
+                    var prob = double.MinValue;
                     foreach (var topic2 in plsa.TopicByDocumentMatrix.Key1Space)
                     {
                         if (plsa.TopicByDocumentMatrix[topic2, uri] > prob)

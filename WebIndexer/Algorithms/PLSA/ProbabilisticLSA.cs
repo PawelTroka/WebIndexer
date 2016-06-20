@@ -29,7 +29,7 @@ namespace WebIndexer.Algorithms.PLSA
             this._terms = termsByDocumentMatrix.Key1Space;
             this._documents = termsByDocumentMatrix.Key2Space;
 
-            this._topics = Enumerable.Range(1,numberOfTopics+1).Select(n => new Topic("Topic "+n)).ToArray();
+            this._topics = Enumerable.Range(1,numberOfTopics).Select(n => new Topic("Topic "+n)).ToArray();
 
             InitData();
         }
