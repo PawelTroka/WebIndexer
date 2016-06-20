@@ -8,6 +8,8 @@ namespace WebIndexer
         UrlSkippedFile,
         Information,
         ShortestPaths,
-
+        ProbabilisticLSA,
+        PLSATermsByTopic,
+        PLSATopicByDocument,
     }
 }

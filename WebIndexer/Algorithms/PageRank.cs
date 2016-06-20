@@ -9,8 +9,8 @@ namespace WebIndexer.Algorithms
 {
     class PageRank
     {
-        private IDictionary<Uri,WebDocument> _documents;
-        private IReadOnlyCollection<Uri> _urlSpace;
+        private readonly IDictionary<Uri,WebDocument> _documents;
+        private readonly IReadOnlyCollection<Uri> _urlSpace;
         public PageRank(IDictionary<Uri, WebDocument> documents)
         {
             _documents = documents;
@@ -22,7 +22,7 @@ namespace WebIndexer.Algorithms
         public int MaxSteps { get; set; } = 10;
 
         public double Convergence { get; set; } = 1e-4;
-        private int N { get { return _urlSpace.Count; } }
+        private int N => _urlSpace.Count;
 
         private readonly Dictionary<Uri, double> _oldPageRankValues=new Dictionary<Uri, double>();
 

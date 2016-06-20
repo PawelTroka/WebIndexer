@@ -11,31 +11,32 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using HiddenMarkov.Algorithms.PLSA.Model;
 using HtmlAgilityPack;
 using WebIndexer.Algorithms;
+using WebIndexer.Algorithms.PLSA;
+using WebIndexer.Collections;
 
 namespace WebIndexer
 {
-    /* TODO:
-     * 3.
-c/ analiza grafu połączeń między dokumentami: liczba wierz. i łuków, rozkłady stopni (in, out), najkrótsze ścieżki (wszystkie pary), średnia odległość, średnica grafu, podział na klastry (współczynniki klastryzacji), odporność na ataki i awarie (zmiany grafu przy usuwaniu wierz. losowych oraz maks. stop.) (10p)
-d/ wybrane 2 parametry (z obszernej literatury na ten temat), inne niz powyżej (5p)
-e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjnego algorytmu PageRank (z tłumieniem i bez tłumienia), zbadaj zbieżność metody dla różnych wartości wsp. tłumienia (5p)
-     */
-
     internal class WebCrawler
     {
 
         private readonly HttpClient client = new HttpClient() {Timeout = TimeSpan.FromHours(1)};
+
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<Uri, int>> _termsByDocumentCounts =
+            new ConcurrentDictionary<string, ConcurrentDictionary<Uri, int>>();
+
         private readonly ConcurrentDictionary<Uri, WebDocument> _documents =
             new ConcurrentDictionary<Uri, WebDocument>();
 
-      //  private readonly DomainGraph _domainGraph = new DomainGraph();
+        //  private readonly DomainGraph _domainGraph = new DomainGraph();
         private readonly ConcurrentBag<Uri> _invalidUrls = new ConcurrentBag<Uri>();
         private readonly IProgress<ReportBack> _progressHandler;
         private Uri _domain;
 
-        private readonly Regex aHrefRegex = new Regex(@"<a\s+(?:[^>]*?\s+)?href=""([^""]*)""", RegexOptions.Compiled|RegexOptions.IgnoreCase);
+        private readonly Regex _aHrefRegex = new Regex(@"<a\s+(?:[^>]*?\s+)?href=""([^""]*)""",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public WebCrawler(IProgress<ReportBack> progressHandler)
         {
@@ -57,9 +58,79 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
         public bool? PrintShortestPaths { get; set; }
 
-        private Regex metaNameNoIndex = new Regex(@"meta\s+name\s*=\s*""\s*robots\s*""\s*content\s*=\s*""\s*noindex\s*""\s*",RegexOptions.Compiled|RegexOptions.IgnoreCase);
+        private Regex metaNameNoIndex =
+            new Regex(@"meta\s+name\s*=\s*""\s*robots\s*""\s*content\s*=\s*""\s*noindex\s*""\s*",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        public async Task Analyze(string domain)
+        public async Task AnalyzeDocuments(int numberOfTopics, int maxIterations, double convergence)
+        {
+            var termsByDocumentMatrix = new MatrixHashTable<Term,Uri,int>(_termsByDocumentCounts.Keys.Select(s => new Term(s)).ToArray(),
+                _termsByDocumentCounts.Values.Select( v => v.Keys).SelectMany((e1) => e1).Distinct().ToArray());
+
+            foreach (var term in termsByDocumentMatrix.Key1Space)
+            {
+                foreach (var uri in termsByDocumentMatrix.Key2Space)
+                {
+                    if (_termsByDocumentCounts.ContainsKey(term.word) &&
+                        _termsByDocumentCounts[term.word].ContainsKey(uri))
+                        termsByDocumentMatrix[term, uri] = _termsByDocumentCounts[term.word][uri];
+                    else
+                        termsByDocumentMatrix[term, uri] = 0;
+                }
+            }
+
+
+            var plsa = new ProbabilisticLSA(termsByDocumentMatrix,numberOfTopics) {Convergence = convergence,MaximumIterations = maxIterations};
+
+            await Task.Run(() => plsa.DoWork());
+            
+
+            _progressHandler.Report(new ReportBack($@"PLSA report (Convergence={plsa.Convergence}, MaximumIterations={plsa.MaximumIterations}, numberOfTopics={numberOfTopics})",ReportStatus.ProbabilisticLSA));
+
+            foreach (var topic1 in plsa.TopicByDocumentMatrix.Key1Space)
+            {
+                _progressHandler.Report(new ReportBack($@"{Environment.NewLine}---------------------------------------------------{Environment.NewLine}{topic1}", ReportStatus.ProbabilisticLSA));
+
+                var prob = double.MinValue;
+                foreach (var uri in plsa.TopicByDocumentMatrix.Key2Space)
+                {
+                    foreach (var topic2 in plsa.TopicByDocumentMatrix.Key1Space)
+                    {
+                        if (plsa.TopicByDocumentMatrix[topic2, uri] > prob)
+                            prob = plsa.TopicByDocumentMatrix[topic2, uri];
+                    }
+                    if (plsa.TopicByDocumentMatrix[topic1, uri] == prob)
+                    {
+                        _progressHandler.Report(new ReportBack($@"{uri}", ReportStatus.ProbabilisticLSA));
+                    }
+                }
+
+            }
+
+
+
+                _progressHandler.Report(new ReportBack("TermsByTopicMatrix:", ReportStatus.PLSATermsByTopic));
+
+            foreach (var term in plsa.TermsByTopicMatrix.Key1Space)
+            {
+                foreach (var topic in plsa.TermsByTopicMatrix.Key2Space)
+                {
+                    _progressHandler.Report(new ReportBack($@"[{term.word},{topic.name}]={plsa.TermsByTopicMatrix[term,topic]}", ReportStatus.PLSATermsByTopic));
+                }
+            }
+
+            _progressHandler.Report(new ReportBack("TopicByDocumentMatrix:", ReportStatus.PLSATopicByDocument));
+
+            foreach (var topic in plsa.TopicByDocumentMatrix.Key1Space)
+            {
+                foreach (var url in plsa.TopicByDocumentMatrix.Key2Space)
+                {
+                    _progressHandler.Report(new ReportBack($@"[{topic.name},{url}]={plsa.TopicByDocumentMatrix[topic, url]}", ReportStatus.PLSATopicByDocument));
+                }
+            }
+        }
+
+    public async Task Analyze(string domain)
         {
             SetThreading();
 
@@ -202,29 +273,17 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             _progressHandler.Report(new ReportBack($"Diameter: {floydWarshall.GetDiameter()}"));//średnica grafu
             _progressHandler.Report(new ReportBack($"Radius: {floydWarshall.GetRadius()}"));
             if (PrintShortestPaths == true) //najkrótsze ścieżki (wszystkie pary)
-                {
-            await Task.Run(() =>
             {
+                await Task.Run(() =>
+                {
 
-                    //var str = await Task.Run(() => floydWarshall.BuildPaths());//floydWarshall.BuildPathsAsync();//Task.Run(()=> BuildPaths(floydWarshall));
-                    var str = floydWarshall.BuildPaths();
-                    _progressHandler.Report(new ReportBack(str, ReportStatus.Information));
-                File.WriteAllText("paths.txt",str);
+                        //var str = await Task.Run(() => floydWarshall.BuildPaths());//floydWarshall.BuildPathsAsync();//Task.Run(()=> BuildPaths(floydWarshall));
+                        var str = floydWarshall.BuildPaths();
+                        _progressHandler.Report(new ReportBack(str, ReportStatus.Information));
+                    File.WriteAllText("paths.txt",str);
                 
-            });
-}
-
-
-
-            // await Task.Delay(1);
-
-            // _progressHandler.Report(new ReportBack("Done"));
-            //podział na klastry (współczynniki klastryzacji)
-
-            //odporność na ataki i awarie (zmiany grafu przy usuwaniu wierz. losowych oraz maks. stop.)
-
-
-            //wybrane 2 parametry(z obszernej literatury na ten temat), inne niz powyżej(5p)
+                });
+            }
         }
 
         private void SavePageRank()
@@ -341,10 +400,12 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
 
             //2. save document
             SaveDocument(url,str);
+            //2.5. analyze document for PLSA
+            AnalyzeDocument(url, str);
 
             var tasks = new ConcurrentBag<Task>();
 
-            var matches = aHrefRegex.Matches(str).Cast<Match>();
+            var matches = _aHrefRegex.Matches(str).Cast<Match>();
             //3. analyze document
             //foreach (Match match in matches)      
             Parallel.ForEach(matches, options,  match =>
@@ -375,8 +436,38 @@ e/ wyznacz rangi stron z zastosowaniem zaiplementowanego przez siebie iteracyjne
             _progressHandler.Report(new ReportBack(url, ReportStatus.UrlProcessed)); //_progressHandler.Report($"{url} - OK!");
         }
 
-        private string _domainDirectory;
+        private void AnalyzeDocument(Uri url, string html)
+        {
+            var plainText = _htmlToTextConverter.ConvertHtml(html);
 
+            var words = plainText.ToLowerInvariant().Split(new[] {' ','.',',','"',';','\'','\n','\r',':','=','-','+','/','(',')','[',']','{','}','#','^','@','!','?','>','<','&','%','|'}, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var word in words)
+            {
+                // ReSharper disable once InconsistentlySynchronizedField
+                if(!_termsByDocumentCounts.ContainsKey(word))
+                    // ReSharper disable once InconsistentlySynchronizedField
+                    _termsByDocumentCounts.TryAdd(word, new ConcurrentDictionary<Uri, int>());
+                // ReSharper disable once InconsistentlySynchronizedField
+                if (!_termsByDocumentCounts[word].ContainsKey(url))
+                {
+                    // ReSharper disable once InconsistentlySynchronizedField
+                    _termsByDocumentCounts[word].TryAdd(url, 1);
+                }
+                else
+                {
+                    //Interlocked.Increment(ref _termsByDocumentCounts[word][url]);
+                    lock (_lockObject)
+                    {
+                        _termsByDocumentCounts[word][url]++;
+                    }
+                }
+            }
+
+        }
+
+        private string _domainDirectory;
+        private readonly HtmlToText _htmlToTextConverter= new HtmlToText();
 
 
         private void SaveDocument(Uri uri,string content)

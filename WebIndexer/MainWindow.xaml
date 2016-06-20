@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WebIndexer"
         mc:Ignorable="d"
-        Title="WebIndexer - Pawel Troka" Height="559.375" Width="766.667">
+        Title="WebIndexer with ProbabilisticLSA - Pawel Troka and Krzysztof Pastuszak" Height="559.375" Width="846.578">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="155" />
@@ -37,6 +37,8 @@
 
             <Label x:Name="label2" Content="Output:" HorizontalAlignment="Left" Margin="10,129,0,0" VerticalAlignment="Top" />
             <CheckBox x:Name="printShortestPathsCheckBox" Content="Print shortest paths?" HorizontalAlignment="Left" Margin="490,135,0,0" VerticalAlignment="Top"/>
+            <Button x:Name="startButton_Copy" Click="StartButton_Copy_OnClick" Content="PLSA" HorizontalAlignment="Left"
+            	VerticalAlignment="Top" Width="103" Height="50" FontSize="20" Canvas.Left="598" Canvas.Top="78" />
 
         </Canvas>
 
@@ -90,12 +92,37 @@
          AcceptsReturn="True" Margin="10" IsReadOnly="True" />
                 </TabItem>
 
+                <TabItem Header="Probabilistic LSA">
+                    <TextBox x:Name="plsaTextBox"
+                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
+         AcceptsReturn="True" Margin="10" IsReadOnly="True" />
+                </TabItem>
+
+
+                <TabItem Header="PLSA TermsByTopic">
+                    <TextBox x:Name="plsaTermsByTopicTextBox"
+                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
+         AcceptsReturn="True" Margin="10" IsReadOnly="True" />
+                </TabItem>
+
+                <TabItem Header="PLSA TopicByDocument">
+                    <TextBox x:Name="plsaTopicByDocumentTextBox"
+                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
+         AcceptsReturn="True" Margin="10" IsReadOnly="True" />
+                </TabItem>
+
             </TabControl>
         </DockPanel>
         <Label x:Name="label1" Content="Max threads:" HorizontalAlignment="Left" Margin="164,88,0,0" VerticalAlignment="Top"/>
         <TextBox x:Name="slider" HorizontalAlignment="Left" Margin="164,119,0,0" VerticalAlignment="Top" Width="78" Height="26" Text="1023"/>
         <Label x:Name="label1_Copy" Content="Max concurency:" HorizontalAlignment="Left" Margin="262,88,0,0" VerticalAlignment="Top"/>
         <TextBox x:Name="slider_Copy" HorizontalAlignment="Left" Margin="262,119,0,0" VerticalAlignment="Top" Width="99" Height="26" Text="8"/>
+        <Label x:Name="label1_Copy1" Content="PLSA topics count:" HorizontalAlignment="Left" Margin="602,16,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="slider_Copy1" HorizontalAlignment="Left" Margin="602,47,0,0" VerticalAlignment="Top" Width="99" Height="26" Text="3"/>
+        <Label x:Name="label1_Copy2" Content="Max iterations:" HorizontalAlignment="Left" Margin="712,16,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="maxIterationsTextBox" HorizontalAlignment="Left" Margin="712,47,0,0" VerticalAlignment="Top" Width="99" Height="26" Text="10"/>
+        <Label x:Name="label1_Copy3" Content="Convergence:" HorizontalAlignment="Left" Margin="712,88,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="convergenceTextBox" HorizontalAlignment="Left" Margin="712,119,0,0" VerticalAlignment="Top" Width="99" Height="26" Text="1e-5"/>
 
 
     </Grid>

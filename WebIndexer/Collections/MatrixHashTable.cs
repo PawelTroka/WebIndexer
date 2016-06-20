@@ -18,8 +18,14 @@ namespace WebIndexer.Collections
         private readonly int _k1SpaceCount;
         private readonly int _k2SpaceCount;
 
+
+        public IReadOnlyCollection<TKey1> Key1Space { get; private set; }
+        public IReadOnlyCollection<TKey2> Key2Space { get; private set; }
+
         public MatrixHashTable(IReadOnlyCollection<TKey1> k1Space, IReadOnlyCollection<TKey2> k2Space)
         {
+            Key1Space = k1Space;
+            Key2Space = k2Space;
             _k1SpaceCount = k1Space.Count;
             _k2SpaceCount = k2Space.Count;
 #if _USE_DICTIONARY_WITHIN_DICTIONARY

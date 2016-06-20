@@ -62,8 +62,13 @@
     </ApplicationDefinition>
     <Compile Include="Algorithms\FloydWarshall.cs" />
     <Compile Include="Algorithms\PageRank.cs" />
+    <Compile Include="Algorithms\PLSA\ExtensionMethods.cs" />
+    <Compile Include="Algorithms\PLSA\Model\Term.cs" />
+    <Compile Include="Algorithms\PLSA\Model\Word.cs" />
+    <Compile Include="Algorithms\PLSA\ProbabilisticLSA.cs" />
     <Compile Include="Collections\MatrixHashTable.cs" />
     <Compile Include="DomainGraph.cs" />
+    <Compile Include="HtmlToText.cs" />
     <Compile Include="ProgressEx.cs" />
     <Compile Include="ReportBack.cs" />
     <Compile Include="ReportStatus.cs" />
