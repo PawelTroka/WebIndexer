@@ -150,7 +150,7 @@
         <Label x:Name="label1_Copy1" Content="PLSA topics count:" HorizontalAlignment="Left" Margin="602,16,0,0" VerticalAlignment="Top"/>
         <TextBox x:Name="slider_Copy1" HorizontalAlignment="Left" Margin="602,47,0,0" VerticalAlignment="Top" Width="99" Height="26" Text="3"/>
         <Label x:Name="label1_Copy2" Content="Max iterations:" HorizontalAlignment="Left" Margin="712,16,0,0" VerticalAlignment="Top"/>
-        <TextBox x:Name="maxIterationsTextBox" HorizontalAlignment="Left" Margin="712,47,0,0" VerticalAlignment="Top" Width="99" Height="26" Text="10"/>
+        <TextBox x:Name="maxIterationsTextBox" HorizontalAlignment="Left" Margin="712,47,0,0" VerticalAlignment="Top" Width="99" Height="26" Text="1"/>
         <Label x:Name="label1_Copy3" Content="Convergence:" HorizontalAlignment="Left" Margin="712,88,0,0" VerticalAlignment="Top"/>
         <TextBox x:Name="convergenceTextBox" HorizontalAlignment="Left" Margin="712,119,0,0" VerticalAlignment="Top" Width="99" Height="26" Text="1e-5"/>
 

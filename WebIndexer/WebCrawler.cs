@@ -80,8 +80,11 @@ namespace WebIndexer
 
             plsa = new ProbabilisticLSA(termsByDocumentMatrix,numberOfTopics) {Convergence = convergence,MaximumIterations = maxIterations};
 
+            var stw = Stopwatch.StartNew();
             await Task.Run(() => plsa.DoWork());
-            
+            stw.Stop();
+            _progressHandler.Report(new ReportBack($@"PLSA time={stw.ElapsedMilliseconds}ms", ReportStatus.ProbabilisticLSA));
+
 
             Filter(filter);
 
