@@ -32,15 +32,18 @@ namespace WebIndexer
                     case ReportStatus.ProbabilisticLSA:
                         plsaTextBox.AppendText(s.Message + Environment.NewLine);
                         break;
-
                     case ReportStatus.PLSATermsByTopic:
                         plsaTermsByTopicTextBox.AppendText(s.Message + Environment.NewLine);
                         break;
-
+                    case ReportStatus.PLSATopicByTerms:
+                        plsaTopicByTermsTextBox.AppendText(s.Message + Environment.NewLine);
+                        break;
                     case ReportStatus.PLSATopicByDocument:
                         plsaTopicByDocumentTextBox.AppendText(s.Message + Environment.NewLine);
                         break;
-
+                    case ReportStatus.PLSADocumentByTopic:
+                        plsaDocumentByTopicTextBox.AppendText(s.Message + Environment.NewLine);
+                        break;
                     default:
                         unprocessedOutputTextBlock.AppendText(s.ToString() + Environment.NewLine);
                         break;
@@ -65,10 +68,15 @@ namespace WebIndexer
             startButton.IsEnabled = false;
             startButton_Copy.IsEnabled = false;
 
-            await _webCrawler.AnalyzeDocuments(int.Parse(slider_Copy1.Text),int.Parse(maxIterationsTextBox.Text),double.Parse(convergenceTextBox.Text));
+            await _webCrawler.AnalyzeDocuments(int.Parse(slider_Copy1.Text),int.Parse(maxIterationsTextBox.Text),double.Parse(convergenceTextBox.Text), double.Parse(filterTextBox.Text));
 
             startButton.IsEnabled = true;
             startButton_Copy.IsEnabled = true;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            _webCrawler.Filter(double.Parse(filterTextBox.Text));
         }
     }
 }

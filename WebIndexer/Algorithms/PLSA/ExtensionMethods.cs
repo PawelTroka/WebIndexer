@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using HiddenMarkov.Algorithms.PLSA.Model;
+using WebIndexer.Algorithms.PLSA.Model;
 using WebIndexer.Collections;
 
 namespace WebIndexer.Algorithms.PLSA

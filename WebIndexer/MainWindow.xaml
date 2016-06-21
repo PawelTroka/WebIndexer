@@ -93,9 +93,26 @@
                 </TabItem>
 
                 <TabItem Header="Probabilistic LSA">
-                    <TextBox x:Name="plsaTextBox"
+                    <Grid>
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="20" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="200" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Row="0" Grid.Column="0" x:Name="filterTextBox" Text="2" TextAlignment="Center" />
+                            <Button Grid.Row="0" Grid.Column="1" Content="Filter" Click="Button_Click" />
+                        </Grid>
+                        <TextBox Grid.Row="1" x:Name="plsaTextBox"
                              TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
          AcceptsReturn="True" Margin="10" IsReadOnly="True" />
+                    </Grid>
+
                 </TabItem>
 
 
@@ -105,8 +122,21 @@
          AcceptsReturn="True" Margin="10" IsReadOnly="True" />
                 </TabItem>
 
+                <TabItem Header="PLSA TopicByTerms">
+                    <TextBox x:Name="plsaTopicByTermsTextBox"
+                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
+         AcceptsReturn="True" Margin="10" IsReadOnly="True" />
+                </TabItem>
+
                 <TabItem Header="PLSA TopicByDocument">
                     <TextBox x:Name="plsaTopicByDocumentTextBox"
+                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
+         AcceptsReturn="True" Margin="10" IsReadOnly="True" />
+                </TabItem>
+
+
+                <TabItem Header="PLSA DocumentByTopic">
+                    <TextBox x:Name="plsaDocumentByTopicTextBox"
                              TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" 
          AcceptsReturn="True" Margin="10" IsReadOnly="True" />
                 </TabItem>

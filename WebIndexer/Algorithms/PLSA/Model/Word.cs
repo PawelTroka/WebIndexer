@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace HiddenMarkov.Algorithms.PLSA.Model
+namespace WebIndexer.Algorithms.PLSA.Model
 {
     class Topic : IEquatable<Topic>, IEqualityComparer<Topic>
     {
@@ -27,6 +24,11 @@ namespace HiddenMarkov.Algorithms.PLSA.Model
         public bool Equals(Topic other)
         {
             return this.name.Equals(other.name);
+        }
+
+        public override string ToString()
+        {
+            return name;
         }
     }
 

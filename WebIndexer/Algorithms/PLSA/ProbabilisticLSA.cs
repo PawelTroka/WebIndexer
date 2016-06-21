@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using HiddenMarkov.Algorithms.PLSA.Model;
+using WebIndexer.Algorithms.PLSA.Model;
 using WebIndexer.Collections;
 
 namespace WebIndexer.Algorithms.PLSA
@@ -57,9 +58,9 @@ namespace WebIndexer.Algorithms.PLSA
                 normalizingFactor = 0.0;
             }
 
-            foreach (var topic in _topics)
-            {
-                foreach (var document in _documents)
+             foreach (var document in _documents)
+                {
+                foreach (var topic in _topics)
                 {
                     TopicByDocumentMatrix[topic, document] = randomGenerator.NextDouble();
                     normalizingFactor += TopicByDocumentMatrix[topic, document];
@@ -67,7 +68,7 @@ namespace WebIndexer.Algorithms.PLSA
                 // var normalizingFactor = TermsByTopicMatrix.Aggregate();
 
 
-                foreach (var document in _documents)
+                foreach (var topic in _topics)//foreach (var document in _documents)
                 {
                     TopicByDocumentMatrix[topic, document] = TopicByDocumentMatrix[topic, document] / normalizingFactor;
                 }
@@ -94,12 +95,11 @@ namespace WebIndexer.Algorithms.PLSA
                     foreach (var doc in _documents)
                     {
                         var denominator = 0.0;
-                        var enumerator = 0.0;
                         foreach (var top in _topics)
                         {
                             denominator += TermsByTopicMatrix[term, top] * TopicByDocumentMatrix[top, doc];
                         }
-                        enumerator = _termsByDocumentMatrix[term, doc] * TopicByDocumentMatrix[topic, doc];
+                        var enumerator = _termsByDocumentMatrix[term, doc] * TopicByDocumentMatrix[topic, doc];
                         tmp += enumerator / denominator;
                     }
                     TermsByTopicMatrix[term, topic] = TermsByTopicMatrix[term, topic] * tmp;
@@ -118,7 +118,7 @@ namespace WebIndexer.Algorithms.PLSA
         {
             foreach (var topic in _topics)
             {
-                var normalizingFactor = 0.0;
+               // var normalizingFactor = 0.0;
                 foreach (var doc in _documents)
                 {
                     var tmp = 0.0;
@@ -133,16 +133,31 @@ namespace WebIndexer.Algorithms.PLSA
                         tmp += enumerator / denominator;
                     }
                     TopicByDocumentMatrix[topic, doc] = TopicByDocumentMatrix[topic, doc] * tmp;
-                    normalizingFactor += TopicByDocumentMatrix[topic, doc];
+                 //   normalizingFactor += TopicByDocumentMatrix[topic, doc];
                     //TermsByTopicMatrix
                 }
                 //normalization
-                foreach (var doc in _documents)
+              /*  foreach (var doc in _documents)
                 {
                     TopicByDocumentMatrix[topic, doc] = TopicByDocumentMatrix[topic, doc] / normalizingFactor;
-                }
+                }*/
             }
+            foreach (var document in _documents)
+            {
+                var normalizingFactor = 0.0;
+                foreach (var topic in _topics)
+                {
+                    normalizingFactor += TopicByDocumentMatrix[topic, document];
+                }
+                // var normalizingFactor = TermsByTopicMatrix.Aggregate();
 
+
+                foreach (var topic in _topics)//foreach (var document in _documents)
+                {
+                    TopicByDocumentMatrix[topic, document] = TopicByDocumentMatrix[topic, document] / normalizingFactor;
+                }
+                normalizingFactor = 0.0;
+            }
         }
 
         private void DoCalculate()

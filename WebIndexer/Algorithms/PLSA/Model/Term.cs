@@ -28,5 +28,10 @@ namespace HiddenMarkov.Algorithms.PLSA.Model
         {
             return this.word.Equals(other.word);
         }
+
+        public override string ToString()
+        {
+            return word;
+        }
     }
 }

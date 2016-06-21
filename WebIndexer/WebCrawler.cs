@@ -62,36 +62,77 @@ namespace WebIndexer
             new Regex(@"meta\s+name\s*=\s*""\s*robots\s*""\s*content\s*=\s*""\s*noindex\s*""\s*",
                 RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        public async Task AnalyzeDocuments(int numberOfTopics, int maxIterations, double convergence)
+
+        private ProbabilisticLSA plsa;
+        public async Task AnalyzeDocuments(int numberOfTopics, int maxIterations, double convergence, double filter)
         {
             var termsByDocumentMatrix = new MatrixHashTable<Term,Uri,int>(_termsByDocumentCounts.Keys.Select(s => new Term(s)).ToArray(),
                 _termsByDocumentCounts.Values.Select( v => v.Keys).SelectMany((e1) => e1).Distinct().ToArray());
 
             foreach (var term in termsByDocumentMatrix.Key1Space)
-            {
                 foreach (var uri in termsByDocumentMatrix.Key2Space)
-                {
                     if (_termsByDocumentCounts.ContainsKey(term.word) &&
                         _termsByDocumentCounts[term.word].ContainsKey(uri))
                         termsByDocumentMatrix[term, uri] = _termsByDocumentCounts[term.word][uri];
                     else
                         termsByDocumentMatrix[term, uri] = 0;
-                }
-            }
 
 
-            var plsa = new ProbabilisticLSA(termsByDocumentMatrix,numberOfTopics) {Convergence = convergence,MaximumIterations = maxIterations};
+            plsa = new ProbabilisticLSA(termsByDocumentMatrix,numberOfTopics) {Convergence = convergence,MaximumIterations = maxIterations};
 
             await Task.Run(() => plsa.DoWork());
             
 
-            _progressHandler.Report(new ReportBack($@"PLSA report (Convergence={plsa.Convergence}, MaximumIterations={plsa.MaximumIterations}, numberOfTopics={numberOfTopics})",ReportStatus.ProbabilisticLSA));
+            Filter(filter);
+
+            _progressHandler.Report(new ReportBack("TermsByTopicMatrix:", ReportStatus.PLSATermsByTopic));
+
+            foreach (var term in plsa.TermsByTopicMatrix.Key1Space)
+                foreach (var topic in plsa.TermsByTopicMatrix.Key2Space)
+                    _progressHandler.Report(
+                        new ReportBack($@"[{term.word},{topic.name}]={plsa.TermsByTopicMatrix[term, topic]}",
+                            ReportStatus.PLSATermsByTopic));
+
+            _progressHandler.Report(new ReportBack("TopicByDocumentMatrix:", ReportStatus.PLSATopicByDocument));
+
+            foreach (var topic in plsa.TopicByDocumentMatrix.Key1Space)
+                foreach (var url in plsa.TopicByDocumentMatrix.Key2Space)
+                    _progressHandler.Report(
+                        new ReportBack($@"[{topic.name},{url}]={plsa.TopicByDocumentMatrix[topic, url]}",
+                            ReportStatus.PLSATopicByDocument));
+
+
+            _progressHandler.Report(new ReportBack("TopicByTermsMatrix:", ReportStatus.PLSATopicByTerms));
+
+            foreach (var topic in plsa.TermsByTopicMatrix.Key2Space)
+                foreach (var term in plsa.TermsByTopicMatrix.Key1Space)
+                    _progressHandler.Report(
+                        new ReportBack($@"[{term.word},{topic.name}]={plsa.TermsByTopicMatrix[term, topic]}",
+                            ReportStatus.PLSATopicByTerms));
+
+            _progressHandler.Report(new ReportBack("DocumentByTopicMatrix:", ReportStatus.PLSADocumentByTopic));
+
+            foreach (var url in plsa.TopicByDocumentMatrix.Key2Space)
+                foreach (var topic in plsa.TopicByDocumentMatrix.Key1Space)
+                    _progressHandler.Report(
+                        new ReportBack($@"[{topic.name},{url}]={plsa.TopicByDocumentMatrix[topic, url]}",
+                            ReportStatus.PLSADocumentByTopic));
+        }
+
+        public void Filter(double filter)
+        {
+            _progressHandler.Report(
+                new ReportBack(
+                    $@"PLSA report (Convergence={plsa.Convergence}, MaximumIterations={plsa.MaximumIterations}, numberOfTopics={plsa
+                        .TopicByDocumentMatrix.Key1Space.Count}, filter={filter})", ReportStatus.ProbabilisticLSA));
 
             foreach (var topic1 in plsa.TopicByDocumentMatrix.Key1Space)
             {
-                _progressHandler.Report(new ReportBack($@"{Environment.NewLine}---------------------------------------------------{Environment.NewLine}{topic1}", ReportStatus.ProbabilisticLSA));
+                _progressHandler.Report(
+                    new ReportBack(
+                        $@"{Environment.NewLine}---------------------------------------------------{Environment.NewLine}{topic1}",
+                        ReportStatus.ProbabilisticLSA));
 
-                
                 foreach (var uri in plsa.TopicByDocumentMatrix.Key2Space)
                 {
                     var prob = double.MinValue;
@@ -102,36 +143,14 @@ namespace WebIndexer
                     }
                     if (plsa.TopicByDocumentMatrix[topic1, uri] == prob)
                     {
-                        _progressHandler.Report(new ReportBack($@"{uri}", ReportStatus.ProbabilisticLSA));
+                        if (prob >= (1.0/plsa.TopicByDocumentMatrix.Key1Space.Count)*filter)
+                            _progressHandler.Report(new ReportBack($@"{uri}", ReportStatus.ProbabilisticLSA));
                     }
-                }
-
-            }
-
-
-
-                _progressHandler.Report(new ReportBack("TermsByTopicMatrix:", ReportStatus.PLSATermsByTopic));
-
-            foreach (var term in plsa.TermsByTopicMatrix.Key1Space)
-            {
-                foreach (var topic in plsa.TermsByTopicMatrix.Key2Space)
-                {
-                    _progressHandler.Report(new ReportBack($@"[{term.word},{topic.name}]={plsa.TermsByTopicMatrix[term,topic]}", ReportStatus.PLSATermsByTopic));
-                }
-            }
-
-            _progressHandler.Report(new ReportBack("TopicByDocumentMatrix:", ReportStatus.PLSATopicByDocument));
-
-            foreach (var topic in plsa.TopicByDocumentMatrix.Key1Space)
-            {
-                foreach (var url in plsa.TopicByDocumentMatrix.Key2Space)
-                {
-                    _progressHandler.Report(new ReportBack($@"[{topic.name},{url}]={plsa.TopicByDocumentMatrix[topic, url]}", ReportStatus.PLSATopicByDocument));
                 }
             }
         }
 
-    public async Task Analyze(string domain)
+        public async Task Analyze(string domain)
         {
             SetThreading();
 

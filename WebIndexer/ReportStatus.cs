@@ -9,7 +9,11 @@ namespace WebIndexer
         Information,
         ShortestPaths,
         ProbabilisticLSA,
+
         PLSATermsByTopic,
+        PLSATopicByTerms,
+
         PLSATopicByDocument,
+        PLSADocumentByTopic,
     }
 }
