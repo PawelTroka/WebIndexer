@@ -92,7 +92,7 @@
          AcceptsReturn="True" Margin="10" IsReadOnly="True" />
                 </TabItem>
 
-                <TabItem Header="Probabilistic LSA">
+                <TabItem Header="pLSA">
                     <Grid>
 
                         <Grid.RowDefinitions>
