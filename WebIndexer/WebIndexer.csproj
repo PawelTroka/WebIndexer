@@ -69,6 +69,7 @@
     <Compile Include="Collections\MatrixHashTable.cs" />
     <Compile Include="DomainGraph.cs" />
     <Compile Include="HtmlToText.cs" />
+    <Compile Include="MP3Player.cs" />
     <Compile Include="ProgressEx.cs" />
     <Compile Include="ReportBack.cs" />
     <Compile Include="ReportStatus.cs" />

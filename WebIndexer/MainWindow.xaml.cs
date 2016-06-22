@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Net.Http;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -71,15 +69,15 @@ namespace WebIndexer
             startButton.IsEnabled = false;
             startButton_Copy.IsEnabled = false;
 
-            mp3Player.Open("Peon - praca praca.mp3");
-            mp3Player.Play(true);
+            _mp3Player.Open("Peon - praca praca.mp3");
+            _mp3Player.Play(true);
             await _webCrawler.AnalyzeDocuments(int.Parse(slider_Copy1.Text),int.Parse(maxIterationsTextBox.Text),double.Parse(convergenceTextBox.Text), double.Parse(filterTextBox.Text));
-            mp3Player.Close();
+            _mp3Player.Close();
 
-            mp3Player.Open("Work complete.mp3");
-            mp3Player.Play(false);
+            _mp3Player.Open("Work complete.mp3");
+            _mp3Player.Play(false);
             await Task.Delay(2000);
-            mp3Player.Close();
+            _mp3Player.Close();
 
             startButton.IsEnabled = true;
             startButton_Copy.IsEnabled = true;
@@ -91,44 +89,6 @@ namespace WebIndexer
         }
 
 
-        MP3Player mp3Player = new MP3Player();
-
-
-
-    }
-
-
-    public class MP3Player
-    {
-        private string _command;
-        private bool isOpen;
-        [DllImport("winmm.dll")]
-
-        private static extern long mciSendString(string strCommand, StringBuilder strReturn, int iReturnLength, IntPtr hwndCallback);
-
-        public void Close()
-        {
-            _command = "close MediaFile";
-            mciSendString(_command, null, 0, IntPtr.Zero);
-            isOpen = false;
-        }
-
-        public void Open(string sFileName)
-        {
-            _command = "open \"" + sFileName + "\" type mpegvideo alias MediaFile";
-            mciSendString(_command, null, 0, IntPtr.Zero);
-            isOpen = true;
-        }
-
-        public void Play(bool loop)
-        {
-            if (isOpen)
-            {
-                _command = "play MediaFile";
-                if (loop)
-                    _command += " REPEAT";
-                mciSendString(_command, null, 0, IntPtr.Zero);
-            }
-        }
+        private readonly MP3Player _mp3Player = new MP3Player();
     }
 }
